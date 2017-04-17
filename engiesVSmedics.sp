@@ -4,9 +4,9 @@
 #include<tf2_stocks> 
 #include<clients>
 
-int DiedYet[64];
-int GameStarted=0;
-bool IsSettingTeam = false;
+int DiedYet[64]; //this array stores wether a player is in the game and wether a player is in blue or red team
+int GameStarted=0; //this int stores the amount of time the game has been started, resets when the game ends.
+bool IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
 
 /* HOW THIS PLUGIN WORKS:
  *	Basically, it keeps track of wether a player has died or not during a game (in the DiedYet array)
@@ -33,22 +33,30 @@ public void OnPluginStart(){
 	HookEvent("player_regenerate",Event_PlayerRegenerate,EventHookMode_Post);
 	HookEvent("player_builtobject",Event_PlayerBuiltObject,EventHookMode_Post);
 	HookEvent("teamplay_round_start", Event_RoundStart,EventHookMode_Post);
+	HookEvent("teamplay_waiting_begins",Event_WaitingBegins,EventHookMode_Post);
 }
-
-public OnMapStart(){ //Disabling respawn times and making team unbalance unlimited.
-	ServerCommand("mp_disable_respawn_times 1");
-	ServerCommand("mp_teams_unbalance_limit 30");
+/*
+ * This function disables respawn times and prevents teams auto balance
+ */
+public OnMapStart(){ 
+	ServerCommand("mp_disable_respawn_times 1"); 
+	ServerCommand("mp_teams_unbalance_limit 30"); 
 	
 }
-public void OnClientPostAdminCheck(int client){ //Initializes DiedYet of the connecting client to the right value
-	if(GameStarted>1){
+/*
+ * This function initializes DiedYet of the connecting client to the right value.
+ */
+public void OnClientPostAdminCheck(int client){
+	if(GameStarted>0){
 		DiedYet[client]=-1;
 	}else{
 		DiedYet[client]=1;
 	}
 		
 }
-
+/*
+ * This function forces the player to be on the right team, the right class and to use the right weapons.
+ */
 public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast){
 
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -88,12 +96,15 @@ public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	}
 	function_CheckVictory();
 }
+/*
+ * This function updates the DiedValue of a player if needed and checks for victory
+ */
 public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
 	
 	if(!IsSettingTeam){
 	
 		int client = GetClientOfUserId(event.GetInt("userid"));
-		if(GameStarted>1){
+		if(GameStarted>0){
 		
 			DiedYet[client] = -1; 
 			
@@ -125,6 +136,10 @@ public Action:Event_PlayerRegenerate(Event event, const char[] name, bool dontBr
 		}
 	}
 }
+/*
+ * This function instantly destroys a sentry, it could be replaced by playing around with  a func_nobuild.
+ * Most of the code has been found in the plugin sentryspawner's code.
+ */
 
 public Action:Event_PlayerBuiltObject(Event event, const char[] name, bool dontBroadcast){ //Instantly destroys any sentry, the destruction part is not by me.
 	
@@ -142,15 +157,24 @@ public Action:Event_PlayerBuiltObject(Event event, const char[] name, bool dontB
         }
 	}
 }
+/*
+ * This function deletes all unwanted elements from the map and balances the teams
+ */
 public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcast){
 	
 	function_PrepareMap();
-	function_ResetTeams();
+	function_ResetTeams(true);
 
 	GameStarted++;
-	PrintToServer("GameStarted incremented");
+	//PrintToServer("GameStarted incremented");//Debugging instruction
 	
 	
+}
+/*
+ * This functions decrements GameStarted because it will be incremented when the waiting begins
+ */
+public Action:Event_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
+	GameStarted=-1;
 }
 
 
@@ -159,6 +183,14 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 
 
 //functions
+
+/*
+ * This function deletes all element that can influence game winning from the map and deletes the doors.
+ * The game winngin elements part is from perky (hide n seek plugin), the doors part is from me.
+ *
+ * @param -
+ * @return -
+ */
 public function_PrepareMap(){
 	
 	//code below is from Perky in Hide n seek plugin, it disables cp and ctf gamemodes.
@@ -241,6 +273,13 @@ public function_PrepareMap(){
 	
 	
 }
+/*
+ * This functions makes a team given in argument win.
+ * The code is from perky, author of the hide n seek plugin
+ * 
+ * @param team		The TFTeam that will win.
+ * @return -
+ */
 public function_teamWin (team) //code from hide n seek
 {
 	if(!IsSettingTeam){
@@ -265,11 +304,20 @@ public function_teamWin (team) //code from hide n seek
 		
 		
 }
+/*
+ * This function computes the teams balance depending on the player counts and
+ * puts them in the right team and if kills is true, it kills all the players. 
+ *
+ * @param kills		Wether the function should kill the players or not.
+ * @return -
+ *
+ *
+ */
 
 
 
-
-public function_ResetTeams(){
+public function_ResetTeams(bool kills){
+	
 	IsSettingTeam=true;
 	for(int i=0;i<64;i++){
 		if(DiedYet[i]!=0){
@@ -325,7 +373,9 @@ public function_ResetTeams(){
 			}
 	}
 	//Kills all the players
-	for(int i=0;i<64;i++){
+	if(kills){
+		
+		for(int i=0;i<64;i++){
 		
 		if(DiedYet[i]!=0){
 			
@@ -337,11 +387,23 @@ public function_ResetTeams(){
 		}	
 	
 	}
+		
+	}
+	
 	IsSettingTeam=false;
 
 }
+/*
+ * This function checks if victory conditions for blue team are met and 
+ * triggers the victory and resets teams if needed.
+ *
+ * @param -
+ * @return -
+ *
+ *
+ */
 public function_CheckVictory(){
-	if(GameStarted>1){
+	if(GameStarted>0){
 	
 		bool AllEngineersDead = true;
 		for(int i=0;i<64;i++){
@@ -354,7 +416,6 @@ public function_CheckVictory(){
 		}
 		if(AllEngineersDead){
 			function_teamWin(TFTeam_Blue);
-			function_ResetTeams();
 		}
 		
 	}
