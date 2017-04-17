@@ -7,6 +7,7 @@
 int DiedYet[64]; //this array stores wether a player is in the game and wether a player is in blue or red team
 int GameStarted=0; //this int stores the amount of time the game has been started, resets when the game ends.
 bool IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
+bool ZombieStarted = false;
 
 /* HOW THIS PLUGIN WORKS:
  *	Basically, it keeps track of wether a player has died or not during a game (in the DiedYet array)
@@ -21,19 +22,20 @@ public Plugin myinfo ={
 	name = "Engies vs Medics",
 	author = "shewowkees",
 	description = "zombie like gamemode",
-	version = "0.8",
+	version = "1.0",
 	url = "noSiteYet"
 };
 
 public void OnPluginStart(){
-	PrintToServer("Engies vs Medics V0.8 by shewowkees, inspired by Muselk.");
+	PrintToServer("Engies vs Medics V1.0 by shewowkees, inspired by Muselk.");
 	HookEvent("player_spawn",Event_PlayerSpawn,EventHookMode_Post);
 	HookEvent("player_death",Event_PlayerDeath,EventHookMode_Post);
-	HookEvent("tf_game_over",Event_PlayerGameOver,EventHookMode_Post);
+	HookEvent("tf_game_over",Event_TFGameOver,EventHookMode_Post);
 	HookEvent("player_regenerate",Event_PlayerRegenerate,EventHookMode_Post);
 	HookEvent("player_builtobject",Event_PlayerBuiltObject,EventHookMode_Post);
-	HookEvent("teamplay_round_start", Event_RoundStart,EventHookMode_Post);
+	HookEvent("teamplay_round_start", Event_RoundStart);
 	HookEvent("teamplay_waiting_begins",Event_WaitingBegins,EventHookMode_Post);
+	HookEvent("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
 }
 /*
  * This function disables respawn times and prevents teams auto balance
@@ -54,6 +56,23 @@ public void OnClientPostAdminCheck(int client){
 	}
 		
 }
+
+
+//Events
+
+/*
+ * This function resets a player's DiedYet value when he disconnects.
+ */
+public Action:Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast){
+	
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	DiedYet[client] = 0;
+	function_CheckVictory();
+	
+	
+	
+	
+}
 /*
  * This function forces the player to be on the right team, the right class and to use the right weapons.
  */
@@ -66,8 +85,9 @@ public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 		TF2_ChangeClientTeam(client, TFTeam_Blue); //Always put him to team blue
 		
 		if( TF2_GetPlayerClass(client) != TFClass_Medic){ //if he isn't a medic, changes his class, kills him and makes him respawn.
+			PrintToChat(client,"[EVZ]: In zombie team, you can only be a medic !");
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
-			ForcePlayerSuicide(client);
+			//ForcePlayerSuicide(client);
 			TF2_RespawnPlayer(client);
 		}
 		
@@ -79,14 +99,15 @@ public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 		
 		if( TF2_GetClientTeam(client)==TFTeam_Blue ){ //if the client chooses blue team from the beginning, puts his DiedYet value to 1 
 			TF2_ChangeClientTeam(client, TFTeam_Red);
-			ForcePlayerSuicide(client);
+			//ForcePlayerSuicide(client);
 			DiedYet[client]=1;
 			TF2_RespawnPlayer(client);
 			
 		}else{
 			if( TF2_GetPlayerClass(client) != TFClass_Engineer){ //if the client isn't an engineer, changes his class, kills him and makes him respawn
+				PrintToChat(client,"[EVZ]: In survivor team, you can only be an engineer !");
 				TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
-				ForcePlayerSuicide(client);
+				//ForcePlayerSuicide(client);
 				DiedYet[client]=1; //sets the diedyet value to 1 because the suicide would set it to -1
 				TF2_RespawnPlayer(client);
 			}
@@ -105,9 +126,10 @@ public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		if(GameStarted>0){
-		
+			PrintToChat(client,"[EVZ]: You have been infected, you can't go back to survivor team !");
 			DiedYet[client] = -1;
 			TF2_ChangeClientTeam(client,TFTeam_Blue);
+			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
 			
 		}
 		function_CheckVictory();
@@ -116,10 +138,10 @@ public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	
 	
 }
-public Action:Event_PlayerGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
-	
+public Action:Event_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
 	
 	GameStarted = 0;
+	function_AllEngineers(false);
 	
 }
 /*
@@ -162,11 +184,15 @@ public Action:Event_PlayerBuiltObject(Event event, const char[] name, bool dontB
  * This function deletes all unwanted elements from the map and balances the teams
  */
 public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcast){
-	
+
 	function_PrepareMap();
 	function_ResetTeams(true);
-
+	CreateTimer(5.0,Start);
 	GameStarted++;
+	PrintToChatAll("[EVZ]: This server runs Engineers vs Zombies V1.0.");
+	PrintToChatAll("[EVZ]: The goal for engineers (red team) is to survive as long as they can");
+	PrintToChatAll("[EVZ]: The goal for medics (blue team) is to kill all engineers to turn them into zombies (medics) !");
+	PrintToChatAll("[EVZ]: This plugin can be downloaded from www.sourcemod.net (sources included)");
 	//PrintToServer("GameStarted incremented");//Debugging instruction
 	
 	
@@ -176,6 +202,11 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
  */
 public Action:Event_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
 	GameStarted=-1;
+}
+
+public Action Start(Handle timer){
+	ZombieStarted = true;
+	
 }
 
 
@@ -283,7 +314,6 @@ public function_PrepareMap(){
  */
 public function_teamWin (team) //code from hide n seek
 {
-	if(!IsSettingTeam){
 		new edict_index = FindEntityByClassname(-1, "team_control_point_master");
 			if (edict_index == -1)
 			{
@@ -300,7 +330,6 @@ public function_teamWin (team) //code from hide n seek
 				//AcceptEntityInput(search, "kill");
 	
 	
-	}
 		
 		
 		
@@ -320,14 +349,7 @@ public function_teamWin (team) //code from hide n seek
 public function_ResetTeams(bool kills){
 	
 	IsSettingTeam=true;
-	for(int i=0;i<64;i++){
-		if(DiedYet[i]!=0){
-			DiedYet[i]=1;
-			TF2_RespawnPlayer(i);
-		}
-			
-	}
-	
+	function_AllEngineers(false);
 	//following code counts the connected players
 	int PlayerCount=0;
 	for(int i=0;i<64;i++){
@@ -364,7 +386,6 @@ public function_ResetTeams(bool kills){
 	}
 	
 	//following code will make needed players start as medic
-	//looping backwards
 	while(StartingMedics>0){
 		int i = GetRandomInt(0,63);
 			if(DiedYet[i]==1){
@@ -378,7 +399,7 @@ public function_ResetTeams(bool kills){
 		
 		for(int i=0;i<64;i++){
 		
-		if(DiedYet[i]!=0){
+		if(DiedYet[i]==-1){
 			
 			if(IsClientInGame(i)){
 						ForcePlayerSuicide(i);
@@ -392,6 +413,7 @@ public function_ResetTeams(bool kills){
 	}
 	
 	IsSettingTeam=false;
+	
 
 }
 /*
@@ -404,7 +426,10 @@ public function_ResetTeams(bool kills){
  *
  */
 public function_CheckVictory(){
-	if(GameStarted>0 && !IsSettingTeam){
+		
+		if(ZombieStarted==false){
+			return;
+		}
 	
 		bool AllEngineersDead = true;
 		for(int i=0;i<64;i++){
@@ -417,12 +442,34 @@ public function_CheckVictory(){
 		}
 		if(AllEngineersDead){
 			function_teamWin(TFTeam_Blue);
+			ZombieStarted=false;
 		}
 		
 	}
 	
-	
-}
+/*
+ * This function puts all players to red engineers.
+ *
+ * @param -
+ * @return -
+ *
+ *
+ */
+ public function_AllEngineers(bool kill){
+	 for(int i=0;i<64;i++){
+		if(DiedYet[i]!=0){
+			DiedYet[i]=1;
+			TF2_ChangeClientTeam(i, TFTeam_Red);
+			if(kill==true){
+				ForcePlayerSuicide(i);
+				TF2_RespawnPlayer(i);
+			}
+			
+		}
+			
+	}
+	 
+ }
 
 
 
