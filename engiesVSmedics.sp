@@ -97,7 +97,7 @@ public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	function_CheckVictory();
 }
 /*
- * This function updates the DiedValue of a player if needed and checks for victory
+ * This function updates the DiedValue of a player if needed,changes his team and checks for victory
  */
 public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
 	
@@ -106,7 +106,8 @@ public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		if(GameStarted>0){
 		
-			DiedYet[client] = -1; 
+			DiedYet[client] = -1;
+			TF2_ChangeClientTeam(client,TFTeam_Blue);
 			
 		}
 		function_CheckVictory();
@@ -403,7 +404,7 @@ public function_ResetTeams(bool kills){
  *
  */
 public function_CheckVictory(){
-	if(GameStarted>0){
+	if(GameStarted>0 && !IsSettingTeam){
 	
 		bool AllEngineersDead = true;
 		for(int i=0;i<64;i++){
