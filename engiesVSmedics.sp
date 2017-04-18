@@ -7,7 +7,7 @@
 int DiedYet[64]; //this array stores wether a player is in the game and wether a player is in blue or red team
 int GameStarted=0; //this int stores the amount of time the game has been started, resets when the game ends.
 bool IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
-bool ZombieStarted = false;
+bool ZombieStarted = false; //This variable is set to true after some time after round start to prevent victory from triggering too soon
 
 /* HOW THIS PLUGIN WORKS:
  *	Basically, it keeps track of wether a player has died or not during a game (in the DiedYet array)
@@ -19,7 +19,7 @@ bool ZombieStarted = false;
  */ 
 
 public Plugin myinfo ={
-	name = "Engies vs Medics",
+	name = "Engineers Vs Zombies",
 	author = "shewowkees",
 	description = "zombie like gamemode",
 	version = "1.0",
@@ -38,15 +38,19 @@ public void OnPluginStart(){
 	HookEvent("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
 }
 /*
- * This function disables respawn times and prevents teams auto balance
+ * This method disables respawn times and prevents teams auto balance.
+ * It also makes the server ban the idle players immediatly, only switching
+ *	them to spectator mode would cause the plugin to misbehave.
+ *
  */
 public OnMapStart(){ 
 	ServerCommand("mp_disable_respawn_times 1"); 
 	ServerCommand("mp_teams_unbalance_limit 30"); 
+	ServerCommand("mp_idledealmethod 2");
 	
 }
 /*
- * This function initializes DiedYet of the connecting client to the right value.
+ * This method initializes DiedYet of the connecting client to the right value.
  */
 public void OnClientPostAdminCheck(int client){
 	if(GameStarted>0){
@@ -58,23 +62,16 @@ public void OnClientPostAdminCheck(int client){
 }
 
 
-//Events
+//EVENTS
+
+
+
+
+//PLAYER RELATED EVENTS
+
 
 /*
- * This function resets a player's DiedYet value when he disconnects.
- */
-public Action:Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast){
-	
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	DiedYet[client] = 0;
-	function_CheckVictory();
-	
-	
-	
-	
-}
-/*
- * This function forces the player to be on the right team, the right class and to use the right weapons.
+ * This method forces the player to be on the right team, the right class and to use the right weapons.
  */
 public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast){
 
@@ -118,7 +115,7 @@ public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	function_CheckVictory();
 }
 /*
- * This function updates the DiedValue of a player if needed,changes his team and checks for victory
+ * This method updates the DiedValue of a player if needed,changes his team and checks for victory
  */
 public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
 	
@@ -135,17 +132,14 @@ public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 		function_CheckVictory();
 	
 	}
-	
-	
 }
-public Action:Event_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
-	
-	GameStarted = 0;
-	function_AllEngineers(false);
-	
-}
+
+
+
+
+
 /*
- *The role of this function is to prevent blue team from getting back their full 
+ *The role of this method is to prevent blue team from getting back their full 
  *equipment after regenerating (from the locker) .
  */
 public Action:Event_PlayerRegenerate(Event event, const char[] name, bool dontBroadcast){ 
@@ -160,7 +154,7 @@ public Action:Event_PlayerRegenerate(Event event, const char[] name, bool dontBr
 	}
 }
 /*
- * This function instantly destroys a sentry, it could be replaced by playing around with  a func_nobuild.
+ * This method instantly destroys a sentry, it could be replaced by playing around with  a func_nobuild.
  * Most of the code has been found in the plugin sentryspawner's code.
  */
 
@@ -173,15 +167,39 @@ public Action:Event_PlayerBuiltObject(Event event, const char[] name, bool dontB
 		decl String:netclass[32];
         GetEntityNetClass(index, netclass, sizeof(netclass));
 
-        if (!strcmp(netclass, "CObjectSentrygun") )
-        {
-            SetVariantInt(9999);
-            AcceptEntityInput(index, "RemoveHealth");
-        }
+		if (!strcmp(netclass, "CObjectSentrygun") )
+		{
+			SetVariantInt(9999);
+			AcceptEntityInput(index, "RemoveHealth");
+		}
 	}
 }
+
 /*
- * This function deletes all unwanted elements from the map and balances the teams
+ * This method resets a player's DiedYet value when he disconnects.
+ */
+public Action:Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast){
+	
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	DiedYet[client] = 0;
+	function_CheckVictory();
+	
+	
+	
+	
+}
+
+//ROUND RELATED EVENTS
+
+
+/*
+ * This functions decrements GameStarted because it will be incremented when the waiting begins
+ */
+public Action:Event_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
+	GameStarted=-1;
+}
+/*
+ * This method deletes all unwanted elements from the map and balances the teams
  */
 public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcast){
 
@@ -197,12 +215,16 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 	
 	
 }
-/*
- * This functions decrements GameStarted because it will be incremented when the waiting begins
- */
-public Action:Event_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
-	GameStarted=-1;
+
+public Action:Event_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
+	
+	GameStarted = 0;
+	function_AllEngineers(false);
+	
 }
+
+
+//TIMERS
 
 public Action Start(Handle timer){
 	ZombieStarted = true;
@@ -210,11 +232,9 @@ public Action Start(Handle timer){
 }
 
 
+//FUNCTIONS
 
 
-
-
-//functions
 
 /*
  * This function deletes all element that can influence game winning from the map and deletes the doors.
@@ -312,7 +332,7 @@ public function_PrepareMap(){
  * @param team		The TFTeam that will win.
  * @return -
  */
-public function_teamWin (team) //code from hide n seek
+public function_teamWin(team) //code from hide n seek
 {
 		new edict_index = FindEntityByClassname(-1, "team_control_point_master");
 			if (edict_index == -1)
@@ -445,12 +465,12 @@ public function_CheckVictory(){
 			ZombieStarted=false;
 		}
 		
-	}
+}
 	
 /*
  * This function puts all players to red engineers.
  *
- * @param -
+ * @param kill 		if true, will kill the players and force their respawn.
  * @return -
  *
  *
