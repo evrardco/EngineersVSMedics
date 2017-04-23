@@ -50,6 +50,7 @@ public void OnPluginStart(){
  *
  */
 public OnMapStart(){ 
+	function_ResetPlugin();
 	ServerCommand("mp_disable_respawn_times 1"); 
 	ServerCommand("mp_teams_unbalance_limit 30"); 
 	ServerCommand("mp_idledealmethod 2");
@@ -57,6 +58,17 @@ public OnMapStart(){
 	ServerCommand("mp_idlemaxtime 10");
 	
 }
+// public OnEventShutdown()
+// {
+	// UnHookEvent("player_spawn",Event_PlayerSpawnChangeClass);
+	// UnHookEvent("player_spawn",Event_PlayerSpawnChangeTeam);
+	// UnHookEvent("player_death",Event_PlayerDeath);
+	// UnHookEvent("tf_game_over",Event_TFGameOver);
+	// UnHookEvent("player_regenerate",Event_PlayerRegenerate);
+	// UnHookEvent("teamplay_round_start", Event_RoundStart);
+	// UnHookEvent("teamplay_waiting_begins",Event_WaitingBegins);
+	// UnHookEvent("player_disconnect",Event_PlayerDisconnect);
+// }
 /*
  * This method initializes DiedYet of the connecting client to the right value.
  */
@@ -575,6 +587,16 @@ public function_CheckVictory(){
 		  }
 		  
 	  }
+  }
+  /*
+   *This function resets every global scope variable
+   */
+  public function_ResetPlugin(){
+	  int EmptyDiedYet[64];
+	  DiedYet = EmptyDiedYet;
+	  GameStarted=0; //this int stores the amount of time the game has been started, resets when the game ends.
+	  IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
+      ZombieStarted = false;
   }
 
 
