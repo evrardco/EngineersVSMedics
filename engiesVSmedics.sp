@@ -8,6 +8,7 @@ int DiedYet[64]; //this array stores wether a player is in the game and wether a
 int GameStarted=0; //this int stores the amount of time the game has been started, resets when the game ends.
 bool IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
 bool ZombieStarted = false; //This variable is set to true after some time after round start to prevent victory from triggering too soon
+ConVar zve_setup_time = null;
 
 /* HOW THIS PLUGIN WORKS:
  *	Basically, it keeps track of wether a player has died or not during a game (in the DiedYet array)
@@ -37,6 +38,10 @@ public void OnPluginStart(){
 	HookEvent("teamplay_waiting_begins",Event_WaitingBegins,EventHookMode_Post);
 	HookEvent("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
 	AddCommandListener(CommandListener_Build, "build");
+	//CONVARS
+	
+	zve_setup_time = CreateConVar("zve_setup_time", "30.0", "Default setup time");
+	AutoExecConfig(true, "plugin_zve");
 }
 /*
  * This method disables respawn times and prevents teams auto balance.
@@ -48,6 +53,8 @@ public OnMapStart(){
 	ServerCommand("mp_disable_respawn_times 1"); 
 	ServerCommand("mp_teams_unbalance_limit 30"); 
 	ServerCommand("mp_idledealmethod 2");
+	ServerCommand("mp_autoteambalance 0");
+	ServerCommand("mp_idlemaxtime 10");
 	
 }
 /*
@@ -109,6 +116,7 @@ public Action:CommandListener_Build(client, const String:command[], argc)
 	
 	//Blocks sentry building
 	else if(iObjectType==TFObject_Sentry){
+		PrintToChat(client, "\x05[EVZ]:\x01 You can't build sentries in this gamemode !");
 		return Plugin_Handled;
 	}
 	
@@ -156,7 +164,7 @@ public Action:Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 	
 		
 		if( TF2_GetPlayerClass(client) != TFClass_Medic){ //if he isn't a medic, changes his class,  him and makes him respawn.
-			PrintToChat(client,"[EVZ]: In zombie team, you can only be a medic !");
+			PrintToChat(client,"\x05[EVZ]:\x01 In zombie team, you can only be a medic !");
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
 			TF2_RespawnPlayer(client);
 		}
@@ -169,7 +177,7 @@ public Action:Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 		
 		
 			if( TF2_GetPlayerClass(client) != TFClass_Engineer){ //if the client isn't an engineer, changes his class, kills him and makes him respawn
-				PrintToChat(client,"[EVZ]: In survivor team, you can only be an engineer !");
+				PrintToChat(client,"\x05[EVZ]:\x01 In survivor team, you can only be an engineer !");
 				TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
 				DiedYet[client]=1; //sets the diedyet value to 1 because the suicide would set it to -1
 				TF2_RespawnPlayer(client);
@@ -190,7 +198,7 @@ public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		if(GameStarted>0){
-			PrintToChat(client,"[EVZ]: You have been infected, you can't go back to survivor team !");
+			PrintToChat(client,"\x05[EVZ]:\x01 You have been infected, you can't go back to survivor team !");
 			DiedYet[client] = -1;
 			TF2_ChangeClientTeam(client,TFTeam_Blue);
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
@@ -255,10 +263,10 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 	CreateTimer(5.0,Start);
 	CreateTimer(2.30,Stun);
 	GameStarted++;
-	PrintToChatAll("[EVZ]: This server runs Engineers vs Zombies V1.0.");
-	PrintToChatAll("[EVZ]: The goal for engineers (red team) is to survive as long as they can");
-	PrintToChatAll("[EVZ]: The goal for medics (blue team) is to kill all engineers to turn them into zombies (medics) !");
-	PrintToChatAll("[EVZ]: This plugin can be downloaded from www.sourcemod.net (sources included)");
+	PrintToChatAll("\x05[EVZ]:\x01 This server runs Engineers vs Zombies V1.0.");
+	PrintToChatAll("\x05[EVZ]:\x01 The goal for engineers (red team) is to survive as long as they can");
+	PrintToChatAll("\x05[EVZ]:\x01 The goal for medics (blue team) is to kill all engineers to turn them into zombies (medics) !");
+	PrintToChatAll("\x05[EVZ]:\x01 This plugin can be downloaded from www.sourcemod.net (sources included)");
 	//PrintToServer("GameStarted incremented");//Debugging instruction
 	
 	
@@ -281,7 +289,11 @@ public Action Start(Handle timer){
 
 public Action Stun(Handle timer){
 	function_StunTeam(TFTeam_Blue);
+	CreateTimer(GetConVarFloat(zve_setup_time), Infection);
 	
+}
+public Action Infection(Handle timer){
+	PrintToChatAll("\x05[EVZ]:\x01 Zombie medics are now unleashed !");
 }
 
 
@@ -486,7 +498,6 @@ public function_ResetTeams(bool kills){
 	}
 	
 	IsSettingTeam=false;
-	function_StunTeam(TFTeam_Blue);
 	
 
 }
@@ -549,6 +560,7 @@ public function_CheckVictory(){
   */
   
   public function_StunTeam(int team){
+	  float time = GetConVarFloat(zve_setup_time);
 	  int cmp=-10;
 	  if(team==TFTeam_Blue){
 		  cmp=-1;
@@ -559,7 +571,7 @@ public function_CheckVictory(){
 	  for(int i=0;i<64;i++){
 		  
 		  if(DiedYet[i]==cmp){
-			  TF2_StunPlayer(i, 30.0, 0.0, TF_STUNFLAG_BONKSTUCK , 0);
+			  TF2_StunPlayer(i, time, 0.0, TF_STUNFLAG_BONKSTUCK , 0);
 		  }
 		  
 	  }
