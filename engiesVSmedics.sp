@@ -253,6 +253,7 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 	function_PrepareMap();
 	function_ResetTeams(true);
 	CreateTimer(5.0,Start);
+	CreateTimer(2.30,Stun);
 	GameStarted++;
 	PrintToChatAll("[EVZ]: This server runs Engineers vs Zombies V1.0.");
 	PrintToChatAll("[EVZ]: The goal for engineers (red team) is to survive as long as they can");
@@ -275,6 +276,11 @@ public Action:Event_TFGameOver(Event event, const char[] name, bool dontBroadcas
 
 public Action Start(Handle timer){
 	ZombieStarted = true;
+	
+}
+
+public Action Stun(Handle timer){
+	function_StunTeam(TFTeam_Blue);
 	
 }
 
@@ -480,6 +486,7 @@ public function_ResetTeams(bool kills){
 	}
 	
 	IsSettingTeam=false;
+	function_StunTeam(TFTeam_Blue);
 	
 
 }
@@ -537,6 +544,26 @@ public function_CheckVictory(){
 	}
 	 
  }
+ /* This function stuns all the players of a given team
+  *
+  */
+  
+  public function_StunTeam(int team){
+	  int cmp=-10;
+	  if(team==TFTeam_Blue){
+		  cmp=-1;
+	  }else if(team==TFTeam_Red){
+		  cmp=1;
+	  }
+	  
+	  for(int i=0;i<64;i++){
+		  
+		  if(DiedYet[i]==cmp){
+			  TF2_StunPlayer(i, 30.0, 0.0, TF_STUNFLAG_BONKSTUCK , 0);
+		  }
+		  
+	  }
+  }
 
 
 
