@@ -28,7 +28,8 @@ public Plugin myinfo ={
 
 public void OnPluginStart(){
 	PrintToServer("Engies vs Medics V1.0 by shewowkees, inspired by Muselk.");
-	HookEvent("player_spawn",Event_PlayerSpawn,EventHookMode_Post);
+	HookEvent("player_spawn",Event_PlayerSpawnChangeClass,EventHookMode_Post);
+	HookEvent("player_spawn",Event_PlayerSpawnChangeTeam,EventHookMode_Pre);
 	HookEvent("player_death",Event_PlayerDeath,EventHookMode_Post);
 	HookEvent("tf_game_over",Event_TFGameOver,EventHookMode_Post);
 	HookEvent("player_regenerate",Event_PlayerRegenerate,EventHookMode_Post);
@@ -61,6 +62,21 @@ public void OnClientPostAdminCheck(int client){
 		
 }
 
+public void OnGameFrame(){
+	new edict_index = FindEntityByClassname(-1, "tf_dropped_weapon");
+	if (edict_index != -1){
+		
+		AcceptEntityInput(edict_index, "Kill");
+		
+	}
+	edict_index = FindEntityByClassname(-1, "tf_ammo_pack");
+	if (edict_index != -1){
+		
+		AcceptEntityInput(edict_index, "Kill");
+		
+	}
+}
+
 
 //EVENTS
 
@@ -70,21 +86,50 @@ public void OnClientPostAdminCheck(int client){
 //PLAYER RELATED EVENTS
 
 
-/*
- * This method forces the player to be on the right team, the right class and to use the right weapons.
+
+ /*
+ * This method forces the spawning player to switch to the right team BEFORE he appears
  */
-public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast){
-
-	int client = GetClientOfUserId(event.GetInt("userid"));
-
+ public Action:Event_PlayerSpawnChangeTeam(Event event, const char[] name, bool dontBroadcast){
+	 
+	 int client = GetClientOfUserId(event.GetInt("userid"));
 	if(DiedYet[client]==-1){ //if client is supposed to be a blue medic
 	
 		TF2_ChangeClientTeam(client, TFTeam_Blue); //Always put him to team blue
+				
+	}else if(DiedYet[client]==1){ //if the client is supposed to be a red engineer.
 		
-		if( TF2_GetPlayerClass(client) != TFClass_Medic){ //if he isn't a medic, changes his class, kills him and makes him respawn.
+		if( TF2_GetClientTeam(client)==TFTeam_Blue ){
+			//if the client chooses blue team from the beginning, puts his DiedYet value to -1 
+			TF2_ChangeClientTeam(client, TFTeam_Red);
+			DiedYet[client]=-1;
+
+			
+		}
+		
+	}
+ }
+ /*
+ * This method forces the player to be on the right team, the right class and to use the right weapons.
+ */
+public Action:Event_PlayerSpawnChangeClass(Event event, const char[] name, bool dontBroadcast){
+
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(DiedYet[client]==0){
+		
+		if(GameStarted>0){
+			DiedYet[client]=-1;
+		}else{
+			DiedYet[client]=1;
+		}
+		
+	}
+	if(DiedYet[client]==-1 || DiedYet[client]==0){ //if client is supposed to be a blue medic
+	
+		
+		if( TF2_GetPlayerClass(client) != TFClass_Medic){ //if he isn't a medic, changes his class,  him and makes him respawn.
 			PrintToChat(client,"[EVZ]: In zombie team, you can only be a medic !");
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
-			//ForcePlayerSuicide(client);
 			TF2_RespawnPlayer(client);
 		}
 		
@@ -94,21 +139,13 @@ public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 		
 	}else if(DiedYet[client]==1){ //if the client is supposed to be a red engineer.
 		
-		if( TF2_GetClientTeam(client)==TFTeam_Blue ){ //if the client chooses blue team from the beginning, puts his DiedYet value to 1 
-			TF2_ChangeClientTeam(client, TFTeam_Red);
-			//ForcePlayerSuicide(client);
-			DiedYet[client]=1;
-			TF2_RespawnPlayer(client);
-			
-		}else{
+		
 			if( TF2_GetPlayerClass(client) != TFClass_Engineer){ //if the client isn't an engineer, changes his class, kills him and makes him respawn
 				PrintToChat(client,"[EVZ]: In survivor team, you can only be an engineer !");
 				TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
-				//ForcePlayerSuicide(client);
 				DiedYet[client]=1; //sets the diedyet value to 1 because the suicide would set it to -1
 				TF2_RespawnPlayer(client);
 			}
-		}
 		
 
 	}
@@ -118,6 +155,8 @@ public Action:Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
  * This method updates the DiedValue of a player if needed,changes his team and checks for victory
  */
 public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
+	
+	
 	
 	if(!IsSettingTeam){
 	
@@ -284,7 +323,7 @@ public function_PrepareMap(){
 		}else{
 		
 			if (IsValidEntity(RespawnRoomIndex)){
-			
+				AcceptEntityInput(RespawnRoomIndex,"Open");
 				AcceptEntityInput(RespawnRoomIndex, "Kill"); //Deletes the door it.
 				x = RespawnRoomIndex;
 				
