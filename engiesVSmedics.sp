@@ -33,10 +33,10 @@ public void OnPluginStart(){
 	HookEvent("player_death",Event_PlayerDeath,EventHookMode_Post);
 	HookEvent("tf_game_over",Event_TFGameOver,EventHookMode_Post);
 	HookEvent("player_regenerate",Event_PlayerRegenerate,EventHookMode_Post);
-	HookEvent("player_builtobject",Event_PlayerBuiltObject,EventHookMode_Post);
 	HookEvent("teamplay_round_start", Event_RoundStart);
 	HookEvent("teamplay_waiting_begins",Event_WaitingBegins,EventHookMode_Post);
 	HookEvent("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
+	AddCommandListener(CommandListener_Build, "build");
 }
 /*
  * This method disables respawn times and prevents teams auto balance.
@@ -85,7 +85,35 @@ public void OnGameFrame(){
 
 //PLAYER RELATED EVENTS
 
+/*
+ * This code is from Tsunami's TF2 build restrictions. It prevents engineers
+ * from even placing a sentry.
+ *
+ */
+public Action:CommandListener_Build(client, const String:command[], argc)
+{
 
+	// Get arguments
+	decl String:sObjectType[256];
+	GetCmdArg(1, sObjectType, sizeof(sObjectType));
+	
+	// Get object mode, type and client's team
+			new iObjectType = StringToInt(sObjectType),
+			iTeam       = GetClientTeam(client);
+	
+	// If invalid object type passed, or client is not on Blu or Red
+	if(iObjectType < TFObject_Dispenser || iObjectType > TFObject_Sentry || iTeam < TFTeam_Red){
+		
+		return Plugin_Continue;
+	}
+	
+	//Blocks sentry building
+	else if(iObjectType==TFObject_Sentry){
+		return Plugin_Handled;
+	}
+	
+	return Plugin_Continue;
+}
 
  /*
  * This method forces the spawning player to switch to the right team BEFORE he appears
@@ -192,27 +220,7 @@ public Action:Event_PlayerRegenerate(Event event, const char[] name, bool dontBr
 		}
 	}
 }
-/*
- * This method instantly destroys a sentry, it could be replaced by playing around with  a func_nobuild.
- * Most of the code has been found in the plugin sentryspawner's code.
- */
 
-public Action:Event_PlayerBuiltObject(Event event, const char[] name, bool dontBroadcast){ //Instantly destroys any sentry, the destruction part is not by me.
-	
-	int index = event.GetInt("index");
-	
-	if(TF2_GetObjectType(index)==TFObject_Sentry){
-		
-		decl String:netclass[32];
-        GetEntityNetClass(index, netclass, sizeof(netclass));
-
-		if (!strcmp(netclass, "CObjectSentrygun") )
-		{
-			SetVariantInt(9999);
-			AcceptEntityInput(index, "RemoveHealth");
-		}
-	}
-}
 
 /*
  * This method resets a player's DiedYet value when he disconnects.
