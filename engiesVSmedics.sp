@@ -9,6 +9,7 @@ int GameStarted=0; //this int stores the amount of time the game has been starte
 bool IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
 bool ZombieStarted = false; //This variable is set to true after some time after round start to prevent victory from triggering too soon
 ConVar zve_setup_time = null;
+bool WaitingEnded = false;
 
 /* HOW THIS PLUGIN WORKS:
  *	Basically, it keeps track of wether a player has died or not during a game (in the DiedYet array)
@@ -38,9 +39,12 @@ public void OnPluginStart(){
 	HookEvent("teamplay_waiting_begins",Event_WaitingBegins,EventHookMode_Post);
 	HookEvent("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
 	AddCommandListener(CommandListener_Build, "build");
+	AddCommandListener(CommandListener_ChangeClass, "joinclass");
+	AddCommandListener(CommandListener_ChangeTeam, "jointeam");
+	AddCommandListener(CommandListener_Kill, "kill");
 	//CONVARS
 	
-	zve_setup_time = CreateConVar("zve_setup_time", "30.0", "Default setup time");
+	zve_setup_time = CreateConVar("zve_setup_time", "30.0", "Default setup time, max 30 seconds");
 	AutoExecConfig(true, "plugin_zve");
 }
 /*
@@ -56,6 +60,9 @@ public OnMapStart(){
 	ServerCommand("mp_idledealmethod 2");
 	ServerCommand("mp_autoteambalance 0");
 	ServerCommand("mp_idlemaxtime 10");
+	ServerCommand("mp_waitingforplayers_time 35");
+	WaitingEnded = false;
+	
 	
 }
 // public OnEventShutdown()
@@ -73,7 +80,7 @@ public OnMapStart(){
  * This method initializes DiedYet of the connecting client to the right value.
  */
 public void OnClientPostAdminCheck(int client){
-	if(GameStarted>0){
+	if(ZombieStarted){
 		DiedYet[client]=-1;
 	}else{
 		DiedYet[client]=1;
@@ -96,6 +103,13 @@ public void OnGameFrame(){
 	}
 }
 
+public void TF2_OnWaitingForPlayersEnd(){
+	
+	WaitingEnded = true;
+	
+}
+
+
 
 //EVENTS
 
@@ -113,7 +127,7 @@ public Action:CommandListener_Build(client, const String:command[], argc)
 {
 
 	// Get arguments
-	decl String:sObjectType[256];
+	decl String:sObjectType[256]
 	GetCmdArg(1, sObjectType, sizeof(sObjectType));
 	
 	// Get object mode, type and client's team
@@ -133,6 +147,71 @@ public Action:CommandListener_Build(client, const String:command[], argc)
 	}
 	
 	return Plugin_Continue;
+}
+
+public Action:CommandListener_ChangeTeam(client, const String:command[],argc){
+	decl String:arg1[256]
+	GetCmdArg(1, arg1, sizeof(arg1));
+	if(strcmp(arg1,"blue",false)==0 && DiedYet[client] == -1){
+		
+		return Plugin_Continue;
+		
+	}else if(DiedYet[client]==-1){
+		
+		ClientCommand(client,"jointeam blue");
+		
+	}
+	if(strcmp(arg1,"red",false)==0 && DiedYet[client]== 1){
+		
+		return Plugin_Continue;
+		
+	}else if(DiedYet[client]==1){
+		
+		ClientCommand(client,"jointeam red");
+		
+	}
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't betray your team in this gamemode !");
+	return Plugin_Handled;
+	// decl String:arg1[256]
+	// GetCmdArgString(arg1, sizeof(arg1));
+	// PrintToChatAll(arg1);
+	// return Plugin_Continue;
+	
+}
+
+public Action:CommandListener_ChangeClass(client,const String:command[], argc){
+	decl String:arg1[256]
+	GetCmdArg(1, arg1, sizeof(arg1));
+	if(strcmp(arg1,"medic",false)==0 && DiedYet[client] == -1){
+		
+		return Plugin_Continue;
+		
+	}else if(DiedYet[client]==-1){
+		
+		ClientCommand(client,"joinclass medic");
+		
+	}
+	if(strcmp(arg1,"engineer",false)==0 && DiedYet[client]== 1){
+		
+		return Plugin_Continue;
+		
+	}else if(DiedYet[client]==1){
+		
+		ClientCommand(client,"joinclass engineer");
+		
+	}
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't change your class in this gamemode !");
+	return Plugin_Handled;
+	// decl String:arg1[256]
+	// GetCmdArgString(arg1, sizeof(arg1));
+	// PrintToChatAll(arg1);
+	// return Plugin_Continue;
+}
+
+public Action:CommandListener_Kill(client, const String:command[], argc){
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't kill yourself in this gamemode !");
+	return Plugin_Handled;
+	
 }
 
  /*
@@ -206,7 +285,7 @@ public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	
 	
 	
-	if(!IsSettingTeam){
+	if(WaitingEnded && ZombieStarted && !IsSettingTeam){
 	
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		if(GameStarted>0){
@@ -272,10 +351,9 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 
 	function_PrepareMap();
 	function_ResetTeams(true);
-	CreateTimer(5.0,Start);
 	CreateTimer(2.30,Stun);
 	GameStarted++;
-	PrintToChatAll("\x05[EVZ]:\x01 This server runs Engineers vs Zombies V1.0.");
+	PrintToChatAll("\x05[EVZ]:\x01 This server runs Engineers vs Zombies V1.1");
 	PrintToChatAll("\x05[EVZ]:\x01 The goal for engineers (red team) is to survive as long as they can");
 	PrintToChatAll("\x05[EVZ]:\x01 The goal for medics (blue team) is to kill all engineers to turn them into zombies (medics) !");
 	PrintToChatAll("\x05[EVZ]:\x01 This plugin can be downloaded from www.sourcemod.net (sources included)");
@@ -294,18 +372,19 @@ public Action:Event_TFGameOver(Event event, const char[] name, bool dontBroadcas
 
 //TIMERS
 
-public Action Start(Handle timer){
-	ZombieStarted = true;
-	
-}
 
 public Action Stun(Handle timer){
 	function_StunTeam(TFTeam_Blue);
-	CreateTimer(GetConVarFloat(zve_setup_time), Infection);
+	if(WaitingEnded){
+		CreateTimer(GetConVarFloat(zve_setup_time), Infection);
+	}
+	
 	
 }
 public Action Infection(Handle timer){
 	PrintToChatAll("\x05[EVZ]:\x01 Zombie medics are now unleashed !");
+	ZombieStarted = true;
+	function_DeleteDoors();
 }
 
 
@@ -314,8 +393,8 @@ public Action Infection(Handle timer){
 
 
 /*
- * This function deletes all element that can influence game winning from the map and deletes the doors.
- * The game winngin elements part is from perky (hide n seek plugin), the doors part is from me.
+ * This function deletes all element that can influence game winning from the map.
+ * The game winngin elements part is from perky (hide n seek plugin).
  *
  * @param -
  * @return -
@@ -345,8 +424,14 @@ public function_PrepareMap(){
 			x = flag_index;
 		}
 	}
-	//following code opens all doors. This part was made by myself
-	x = -1
+	
+}
+/*
+ * This function deletes door and spawnroom things
+ */
+ public function_DeleteDoors(){//following code opens all doors. This part was made by myself
+	 
+	int x = -1
 	new RespawnRoomIndex;
 	bool HasFound = true;
 	
@@ -395,13 +480,8 @@ public function_PrepareMap(){
 		}
 		
 	}
-	
-	
-	
-	
-	
-	
-}
+	 
+ }
 /*
  * This functions makes a team given in argument win.
  * The code is from perky, author of the hide n seek plugin
@@ -573,6 +653,9 @@ public function_CheckVictory(){
   
   public function_StunTeam(int team){
 	  float time = GetConVarFloat(zve_setup_time);
+	  if(time>30.0){
+		  time=30.0
+	  }
 	  int cmp=-10;
 	  if(team==TFTeam_Blue){
 		  cmp=-1;
