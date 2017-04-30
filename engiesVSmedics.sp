@@ -257,7 +257,7 @@ public Action:Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 		if( TF2_GetPlayerClass(client) != TFClass_Medic){ //if he isn't a medic, changes his class,  him and makes him respawn.
 			PrintToChat(client,"\x05[EVZ]:\x01 In zombie team, you can only be a medic !");
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
-			TF2_RespawnPlayer(client);
+			TF2_RegeneratePlayer(client);
 		}
 
 
@@ -270,7 +270,7 @@ public Action:Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 				PrintToChat(client,"\x05[EVZ]:\x01 In survivor team, you can only be an engineer !");
 				TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
 				DiedYet[client]=1; //sets the diedyet value to 1 because the suicide would set it to -1
-				TF2_RespawnPlayer(client);
+				TF2_RegeneratePlayer(client);
 			}
 
 
@@ -560,7 +560,7 @@ public function_ResetTeams(bool kills){
 
 			if(IsClientInGame(i)){
 						ForcePlayerSuicide(i);
-						TF2_RespawnPlayer(i);
+						TF2_RegeneratePlayer(i);
 			}
 
 		}
@@ -619,7 +619,7 @@ public function_CheckVictory(){
 			TF2_ChangeClientTeam(i, TFTeam_Red);
 			if(kill==true){
 				ForcePlayerSuicide(i);
-				TF2_RespawnPlayer(i);
+				TF2_RegeneratePlayer(i);
 			}
 
 		}
