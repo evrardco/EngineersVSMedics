@@ -12,6 +12,7 @@ ConVar zve_setup_time = null;
 ConVar zve_round_time = null;
 bool WaitingEnded = false;
 Handle RedWonHandle = INVALID_HANDLE;
+int CountDownCounter = 0;
 /* HOW THIS PLUGIN WORKS:
  *	Basically, it keeps track of wether a player has died or not during a game (in the DiedYet array)
  *	when a player is connected it has its DiedYet value set to -1 if the game has started, 1 else.
@@ -45,7 +46,7 @@ public void OnPluginStart(){
 	//CONVARS
 
 	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");
-	zve_setup_time = CreateConVar("zve_setup_time", "30.0", "Setup time, 30s by default.");
+	zve_setup_time = CreateConVar("zve_setup_time", "45.0", "Setup time, 30s by default.");
 	AutoExecConfig(true, "plugin_zve");
 }
 /*
@@ -364,11 +365,40 @@ public Action:Event_TFGameOver(Event event, const char[] name, bool dontBroadcas
 public Action Stun(Handle timer){
 	function_StunTeam(TFTeam_Blue);
 	if(WaitingEnded){
-		CreateTimer(GetConVarFloat(zve_setup_time), Infection);
+		float setupTime = GetConVarFloat(zve_setup_time);
+		CreateTimer(setupTime, Infection);
+		if(setupTime>11.0){
+			CreateTimer(setupTime-11.0, CountDownStart);
+		}
 	}
 
 
 }
+public Action CountDownStart(Handle timer){
+
+	CreateTimer(1.0, CountDown, _, TIMER_REPEAT);
+	PrintToChatAll("\x05[EVZ]:\x01 Infection starts in...");
+
+}
+public Action CountDown(Handle timer){
+	if(CountDownCounter<10){
+		char message[] = "\x05[EVZ]:\x01 ";
+		char timeLeft[3];
+		IntToString(10-CountDownCounter, timeLeft, 3);
+		StrCat(message, sizeof(message)+3,timeLeft);
+		PrintToChatAll(message);
+		CountDownCounter++;
+		return Plugin_Continue;
+	}else{
+		CountDownCounter = 0;
+		KillTimer(timer, false);
+		return Plugin_Stop;
+
+	}
+
+
+}
+
 public Action Infection(Handle timer){
 	PrintToChatAll("\x05[EVZ]:\x01 Zombie medics are now unleashed !");
 	ZombieStarted = true;
