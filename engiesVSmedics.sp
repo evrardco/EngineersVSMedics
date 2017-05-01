@@ -10,9 +10,13 @@ bool IsSettingTeam = false; //this bool switches to false when balancing teams s
 bool ZombieStarted = false; //This variable is set to true after some time after round start to prevent victory from triggering too soon
 ConVar zve_setup_time = null;
 ConVar zve_round_time = null;
+ConVar zve_tanks = null;
+ConVar zve_super_zombies = null;
 bool WaitingEnded = false;
 Handle RedWonHandle = INVALID_HANDLE;
+Handle SuperZombiesTimerHandle = INVALID_HANDLE;
 int CountDownCounter = 0;
+bool SuperZombies = false;
 /* HOW THIS PLUGIN WORKS:
  *	Basically, it keeps track of wether a player has died or not during a game (in the DiedYet array)
  *	when a player is connected it has its DiedYet value set to -1 if the game has started, 1 else.
@@ -47,6 +51,8 @@ public void OnPluginStart(){
 
 	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");
 	zve_setup_time = CreateConVar("zve_setup_time", "45.0", "Setup time, 30s by default.");
+	zve_super_zombies = CreateConVar("zve_super_zombies", "30.0", "How much time before round end zombies gain super abilities. Set to 0 to disable it.")
+	zve_tanks = CreateConVar("zve_tanks", "60.0", "How much time after setup the first zombies have a health boost. Set to 0 to disable it.")
 	AutoExecConfig(true, "plugin_zve");
 }
 /*
@@ -266,6 +272,7 @@ public Action:Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 
 
 		function_StripToMelee(client);
+		function_MakeSuperZombie(client);
 
 	}else if(DiedYet[client]==1){ //if the client is supposed to be a red engineer.
 
@@ -332,11 +339,22 @@ public Action:Event_WaitingBegins(Event event, const char[] name, bool dontBroad
  * This method deletes all unwanted elements from the map and balances the teams
  */
 public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcast){
+	SuperZombies = false;
+	ServerCommand("sv_gravity 800");
 	if(RedWonHandle!=INVALID_HANDLE){
 		KillTimer(RedWonHandle,false);
 		RedWonHandle=INVALID_HANDLE;
 	}
-  RedWonHandle = CreateTimer(GetConVarFloat(zve_round_time)+GetConVarFloat(zve_setup_time),RedWon);
+	if(SuperZombiesTimerHandle!=INVALID_HANDLE){
+		KillTimer(SuperZombiesTimerHandle,false);
+		SuperZombiesTimerHandle=INVALID_HANDLE;
+	}
+	float ActualRoundTime = GetConVarFloat(zve_round_time)+GetConVarFloat(zve_setup_time);
+  RedWonHandle = CreateTimer(ActualRoundTime,RedWon);
+	if(GetConVarFloat(zve_super_zombies)>0.0){
+		SuperZombiesTimerHandle = CreateTimer(ActualRoundTime-GetConVarFloat(zve_super_zombies), SuperZombiesTimer);
+	}
+
 	function_PrepareMap();
 	function_ResetTeams(true);
 	CreateTimer(2.30,Stun);
@@ -353,14 +371,27 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 public Action:Event_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
 
 	GameStarted = 0;
-	function_AllEngineers(false);
 
 
 }
 
 
 //TIMERS
+public Action SuperZombiesTimer(Handle timer){
+	PrintToChatAll("\x05[EVZ]:\x01 Zombies have gained crits and higher jump height !");
+	SuperZombies = true;
+	ServerCommand("sv_gravity 500");
+	for(int i=0;i<64;i++){
+		if(DiedYet[i]==-1){
 
+			function_MakeSuperZombie(i);
+
+		}
+	}
+	SuperZombiesTimerHandle = INVALID_HANDLE;
+
+
+}
 
 public Action Stun(Handle timer){
 	function_StunTeam(TFTeam_Blue);
@@ -722,6 +753,7 @@ public function_CheckVictory(){
 
 		  if(DiedYet[i]==cmp){
 			  TF2_StunPlayer(i, time, 0.0, TF_STUNFLAG_BONKSTUCK , 0);
+				TF2_AddCondition(i,view_as<TFCond>(55), GetConVarFloat(zve_setup_time)+GetConVarFloat(zve_tanks), 0);
 		  }
 
 	  }
@@ -729,18 +761,27 @@ public function_CheckVictory(){
   /*
    *This function resets every global scope variable
    */
-  public function_ResetPlugin(){
+  public void function_ResetPlugin(){
 	  int EmptyDiedYet[64];
 	  DiedYet = EmptyDiedYet;
 	  GameStarted=0; //this int stores the amount of time the game has been started, resets when the game ends.
 	  IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
-      ZombieStarted = false;
+    ZombieStarted = false;
   }
 
-	public function_StripToMelee(int client){
+	public void function_StripToMelee(int client){
 
 		TF2_AddCondition(client, view_as<TFCond>(85), TFCondDuration_Infinite, 0);
 		TF2_AddCondition(client, view_as<TFCond>(41), TFCondDuration_Infinite, 0);
 		TF2_RemoveCondition(client, view_as<TFCond>(85) );
+
+	}
+
+	public void function_MakeSuperZombie(int client){
+
+		if(SuperZombies){
+			TF2_AddCondition(client, view_as<TFCond>(38), TFCondDuration_Infinite, 0);
+		}
+
 
 	}
