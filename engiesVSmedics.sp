@@ -30,12 +30,12 @@ public Plugin myinfo ={
 	name = "Engineers Vs Zombies",
 	author = "shewowkees",
 	description = "zombie like gamemode",
-	version = "1.1",
+	version = "1.2",
 	url = "noSiteYet"
 };
 
 public void OnPluginStart(){
-	PrintToServer("Engies vs Medics V1.1 by shewowkees, inspired by Muselk.");
+	PrintToServer("Engies vs Medics V1.2 by shewowkees, inspired by Muselk.");
 	HookEvent("player_spawn",Event_PlayerSpawnChangeClass,EventHookMode_Post);
 	HookEvent("player_spawn",Event_PlayerSpawnChangeTeam,EventHookMode_Pre);
 	HookEvent("player_death",Event_PlayerDeath,EventHookMode_Post);
