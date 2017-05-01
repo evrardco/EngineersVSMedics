@@ -47,6 +47,8 @@ public void OnPluginStart(){
 	AddCommandListener(CommandListener_ChangeClass, "joinclass");
 	AddCommandListener(CommandListener_ChangeTeam, "jointeam");
 	AddCommandListener(CommandListener_Kill, "kill");
+	AddCommandListener(CommandListener_Spectate, "spectate");
+	AddCommandListener(CommandListener_explode, "explode");
 	//CONVARS
 
 	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");
@@ -97,20 +99,7 @@ public void OnClientPostAdminCheck(int client){
 
 }
 
-public void OnGameFrame(){
-	new edict_index = FindEntityByClassname(-1, "tf_dropped_weapon");
-	if (edict_index != -1){
 
-		AcceptEntityInput(edict_index, "Kill");
-
-	}
-	edict_index = FindEntityByClassname(-1, "tf_ammo_pack");
-	if (edict_index != -1){
-
-		AcceptEntityInput(edict_index, "Kill");
-
-	}
-}
 
 public void TF2_OnWaitingForPlayersEnd(){
 
@@ -133,7 +122,7 @@ public void TF2_OnWaitingForPlayersEnd(){
  * from even placing a sentry.
  *
  */
-public Action:CommandListener_Build(client, const String:command[], argc)
+public Action CommandListener_Build(client, const String:command[], argc)
 {
 
 	// Get arguments
@@ -159,7 +148,7 @@ public Action:CommandListener_Build(client, const String:command[], argc)
 	return Plugin_Continue;
 }
 
-public Action:CommandListener_ChangeTeam(client, const String:command[],argc){
+public Action CommandListener_ChangeTeam(client, const String:command[],argc){
 	decl String:arg1[256]
 	GetCmdArg(1, arg1, sizeof(arg1));
 	if(strcmp(arg1,"blue",false)==0 && DiedYet[client] == -1){
@@ -189,7 +178,7 @@ public Action:CommandListener_ChangeTeam(client, const String:command[],argc){
 
 }
 
-public Action:CommandListener_ChangeClass(client,const String:command[], argc){
+public Action CommandListener_ChangeClass(client,const String:command[], argc){
 	decl String:arg1[256]
 	GetCmdArg(1, arg1, sizeof(arg1));
 	if(strcmp(arg1,"medic",false)==0 && DiedYet[client] == -1){
@@ -218,10 +207,21 @@ public Action:CommandListener_ChangeClass(client,const String:command[], argc){
 	// return Plugin_Continue;
 }
 
-public Action:CommandListener_Kill(client, const String:command[], argc){
+public Action CommandListener_Kill(client, const String:command[], argc){
 	PrintToChat(client, "\x05[EVZ]:\x01 You can't kill yourself in this gamemode !");
 	return Plugin_Handled;
 
+}
+
+public Action CommandListener_explode(client, const String:command[], argc){
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't kill yourself in this gamemode !");
+	return Plugin_Handled;
+
+}
+
+public Action CommandListener_Spectate(client, const String:command[], argc){
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't go to spectator in this gamemode !");
+	return Plugin_Handled;
 }
 
  /*
@@ -230,18 +230,14 @@ public Action:CommandListener_Kill(client, const String:command[], argc){
  public Action:Event_PlayerSpawnChangeTeam(Event event, const char[] name, bool dontBroadcast){
 
 	 int client = GetClientOfUserId(event.GetInt("userid"));
-	if(DiedYet[client]==-1){ //if client is supposed to be a blue medic
-
-		TF2_ChangeClientTeam(client, TFTeam_Blue); //Always put him to team blue
+	if(DiedYet[client]==-1 && TF2_GetClientTeam(client)==TFTeam_Red){ //if client is supposed to be a blue medic
+		function_setNextTeam(client,TFTeam_Blue);
+		TF2_RespawnPlayer(client);
 
 	}else if(DiedYet[client]==1){ //if the client is supposed to be a red engineer.
 
 		if( TF2_GetClientTeam(client)==TFTeam_Blue ){
-			//if the client chooses blue team from the beginning, puts his DiedYet value to -1
-			TF2_ChangeClientTeam(client, TFTeam_Red);
 			DiedYet[client]=-1;
-
-
 		}
 
 	}
@@ -356,7 +352,10 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 	}
 
 	function_PrepareMap();
-	function_ResetTeams(true);
+	if(WaitingEnded){
+		function_ResetTeams(true);
+	}
+
 	CreateTimer(2.30,Stun);
 	GameStarted++;
 	PrintToChatAll("\x05[EVZ]:\x01 This server runs Engineers vs Zombies V1.1");
@@ -588,6 +587,7 @@ public function_teamWin(TFTeam team) //code from hide n seek
 	new search = FindEntityByClassname(-1, "team_control_point_master")
 	SetVariantInt(team);
 	AcceptEntityInput(search, "SetWinner");
+
 		//AcceptEntityInput(search, "SetTeam");
 		//AcceptEntityInput(search, "RoundWin");
 		//AcceptEntityInput(search, "kill");
@@ -665,8 +665,9 @@ public function_ResetTeams(bool kills){
 		if(DiedYet[i]==-1){
 
 			if(IsClientInGame(i)){
-						ForcePlayerSuicide(i);
-						TF2_RegeneratePlayer(i);
+						function_setNextTeam(i,TFTeam_Blue);
+						TF2_RespawnPlayer(i);
+
 			}
 
 		}
@@ -722,7 +723,8 @@ public function_CheckVictory(){
 	 for(int i=0;i<64;i++){
 		if(DiedYet[i]!=0){
 			DiedYet[i]=1;
-			TF2_ChangeClientTeam(i, TFTeam_Red);
+			function_setNextTeam(i,TFTeam_Red);
+			TF2_RespawnPlayer(i);
 			if(kill==true){
 				ForcePlayerSuicide(i);
 				TF2_RegeneratePlayer(i);
@@ -774,6 +776,8 @@ public function_CheckVictory(){
 		TF2_AddCondition(client, view_as<TFCond>(85), TFCondDuration_Infinite, 0);
 		TF2_AddCondition(client, view_as<TFCond>(41), TFCondDuration_Infinite, 0);
 		TF2_RemoveCondition(client, view_as<TFCond>(85) );
+		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
 
 	}
 
@@ -783,5 +787,19 @@ public function_CheckVictory(){
 			TF2_AddCondition(client, view_as<TFCond>(38), TFCondDuration_Infinite, 0);
 		}
 
+
+	}
+
+	public void function_setNextTeam(int client, TFTeam team){
+
+		if(IsValidEntity(client) && IsClientInGame(client)){
+
+			new EntProp = GetEntProp(client, Prop_Send, "m_lifeState");
+			SetEntProp(client, Prop_Send, "m_lifeState", 2);
+			ChangeClientTeam(client, team);
+			SetEntProp(client, Prop_Send, "m_lifeState", EntProp);
+
+
+		}
 
 	}
