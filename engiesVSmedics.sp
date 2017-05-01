@@ -9,8 +9,9 @@ int GameStarted=0; //this int stores the amount of time the game has been starte
 bool IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
 bool ZombieStarted = false; //This variable is set to true after some time after round start to prevent victory from triggering too soon
 ConVar zve_setup_time = null;
+ConVar zve_round_time = null;
 bool WaitingEnded = false;
-
+Handle RedWonHandle = INVALID_HANDLE;
 /* HOW THIS PLUGIN WORKS:
  *	Basically, it keeps track of wether a player has died or not during a game (in the DiedYet array)
  *	when a player is connected it has its DiedYet value set to -1 if the game has started, 1 else.
@@ -43,7 +44,8 @@ public void OnPluginStart(){
 	AddCommandListener(CommandListener_Kill, "kill");
 	//CONVARS
 
-	zve_setup_time = CreateConVar("zve_setup_time", "30.0", "Default setup time, max 30 seconds");
+	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");
+	zve_setup_time = CreateConVar("zve_setup_time", "30.0", "Setup time, 30s by default.");
 	AutoExecConfig(true, "plugin_zve");
 }
 /*
@@ -60,6 +62,7 @@ public OnMapStart(){
 	ServerCommand("mp_autoteambalance 0");
 	ServerCommand("mp_idlemaxtime 10");
 	ServerCommand("mp_waitingforplayers_time 35");
+	ServerCommand("mp_scrambleteams_auto 0");
 	WaitingEnded = false;
 
 
@@ -328,7 +331,11 @@ public Action:Event_WaitingBegins(Event event, const char[] name, bool dontBroad
  * This method deletes all unwanted elements from the map and balances the teams
  */
 public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcast){
-
+	if(RedWonHandle!=INVALID_HANDLE){
+		KillTimer(RedWonHandle,false);
+		RedWonHandle=INVALID_HANDLE;
+	}
+  RedWonHandle = CreateTimer(GetConVarFloat(zve_round_time)+GetConVarFloat(zve_setup_time),RedWon);
 	function_PrepareMap();
 	function_ResetTeams(true);
 	CreateTimer(2.30,Stun);
@@ -346,6 +353,7 @@ public Action:Event_TFGameOver(Event event, const char[] name, bool dontBroadcas
 
 	GameStarted = 0;
 	function_AllEngineers(false);
+
 
 }
 
@@ -365,6 +373,12 @@ public Action Infection(Handle timer){
 	PrintToChatAll("\x05[EVZ]:\x01 Zombie medics are now unleashed !");
 	ZombieStarted = true;
 	function_DeleteDoors();
+}
+public Action RedWon(Handle timer){
+
+	function_teamWin(TFTeam_Red);
+	RedWonHandle=INVALID_HANDLE;
+
 }
 
 
@@ -404,6 +418,34 @@ public function_PrepareMap(){
 			x = flag_index;
 		}
 	}
+
+	 x = -1
+	new timer_index;
+	bool HasFound = true;
+
+	while(HasFound){
+
+		timer_index = FindEntityByClassname (x, "team_round_timer"); //finds timers
+
+		if(timer_index==-1){//breaks the loop if no matching entity has been found
+
+			HasFound=false;
+
+		}else{
+
+			if (IsValidEntity(timer_index)){
+				SetVariantFloat(0.0);
+				AcceptEntityInput(timer_index, "SetSetupTime");
+				SetVariantInt(GetConVarInt(zve_round_time)+GetConVarInt(zve_setup_time));
+				AcceptEntityInput(timer_index, "SetTime");
+				x = timer_index;
+
+			}
+
+		}
+
+	}
+
 
 }
 /*
@@ -469,22 +511,25 @@ public function_PrepareMap(){
  * @param team		The TFTeam that will win.
  * @return -
  */
-public function_teamWin(team) //code from hide n seek
+public function_teamWin(TFTeam team) //code from hide n seek
 {
-		new edict_index = FindEntityByClassname(-1, "team_control_point_master");
-			if (edict_index == -1)
-			{
-				new g_ctf = CreateEntityByName("team_control_point_master");
-				DispatchSpawn(g_ctf);
-				AcceptEntityInput(g_ctf, "Enable");
-			}
+	//this code kills the timer that makes redteam win
 
-			new search = FindEntityByClassname(-1, "team_control_point_master")
-			SetVariantInt(team);
-			AcceptEntityInput(search, "SetWinner");
-				//AcceptEntityInput(search, "SetTeam");
-				//AcceptEntityInput(search, "RoundWin");
-				//AcceptEntityInput(search, "kill");
+	//this is the code that actually makes a team win
+	new edict_index = FindEntityByClassname(-1, "team_control_point_master");
+	if (edict_index == -1)
+	{
+		new g_ctf = CreateEntityByName("team_control_point_master");
+		DispatchSpawn(g_ctf);
+		AcceptEntityInput(g_ctf, "Enable");
+	}
+
+	new search = FindEntityByClassname(-1, "team_control_point_master")
+	SetVariantInt(team);
+	AcceptEntityInput(search, "SetWinner");
+		//AcceptEntityInput(search, "SetTeam");
+		//AcceptEntityInput(search, "RoundWin");
+		//AcceptEntityInput(search, "kill");
 
 
 
