@@ -91,11 +91,17 @@ public OnMapStart(){
  * This method initializes DiedYet of the connecting client to the right value.
  */
 public void OnClientPostAdminCheck(int client){
+	if(function_countPlayers()==0){
+
+		function_ResetPlugin();
+
+	}
 	if(ZombieStarted) {
 		DiedYet[client]=-1;
 	}else{
 		DiedYet[client]=1;
 	}
+
 
 }
 
@@ -457,54 +463,14 @@ public function_PrepareMap(){
 
 	//code below is from Perky in Hide n seek plugin, it disables cp and ctf gamemodes.
 	//following code disables cp and pl
-	int edict_index;
-	int x = -1;
-	for (new i = 0; i < 5; i++) {
-		edict_index = FindEntityByClassname(x, "trigger_capture_area");         //finds any capture area
-		if (IsValidEntity(edict_index)) {
-			SetVariantInt(0);         //Argument value is 0 if the input needs any
-			AcceptEntityInput(edict_index, "SetTeam");         //set its team to 0
-			AcceptEntityInput(edict_index, "Disable");         // Disables it
-			x = edict_index;
-		}
-	}
-	//following code disables flags
-	x = -1;
-	int flag_index;
-	for (new i = 0; i < 5; i++) {
-		flag_index = FindEntityByClassname(x, "item_teamflag"); //finds flags
-		if (IsValidEntity(flag_index)) {
-			AcceptEntityInput(flag_index, "Disable"); //disables them
-			x = flag_index;
-		}
-	}
-
-	x = -1
-	int timer_index;
-	bool HasFound = true;
-
-	while(HasFound) {
-
-		timer_index = FindEntityByClassname (x, "team_round_timer"); //finds timers
-
-		if(timer_index==-1) {//breaks the loop if no matching entity has been found
-
-			HasFound=false;
-
-		}else{
-
-			if (IsValidEntity(timer_index)) {
-				SetVariantFloat(0.0);
-				AcceptEntityInput(timer_index, "SetSetupTime");
-				SetVariantInt(GetConVarInt(zve_round_time)+GetConVarInt(zve_setup_time));
-				AcceptEntityInput(timer_index, "SetTime");
-				x = timer_index;
-
-			}
-
-		}
-
-	}
+	SetVariantInt(0);
+	function_sendEntitiesInput("trigger_capture_area","SetTeam");
+	function_sendEntitiesInput("trigger_capture_area","Disable");
+	function_sendEntitiesInput("item_teamflag","Disable");
+	SetVariantInt(0);
+	function_sendEntitiesInput("team_round_timer","SetSetupTime");
+	SetVariantInt(GetConVarInt(zve_round_time)+GetConVarInt(zve_setup_time));
+	function_sendEntitiesInput("team_round_timer","SetTime");
 
 
 }
@@ -513,55 +479,11 @@ public function_PrepareMap(){
  */
 public function_DeleteDoors(){ //following code opens all doors. This part was made by myself
 
-	int x = -1
-	int RespawnRoomIndex;
-	bool HasFound = true;
-
-	while(HasFound) {
-
-		RespawnRoomIndex = FindEntityByClassname (x, "func_door"); //finds doors
-
-		if(RespawnRoomIndex==-1) {//breaks the loop if no matching entity has been found
-
-			HasFound=false;
-
-		}else{
-
-			if (IsValidEntity(RespawnRoomIndex)) {
-				AcceptEntityInput(RespawnRoomIndex,"Open");
-				AcceptEntityInput(RespawnRoomIndex, "Kill"); //Deletes the door it.
-				x = RespawnRoomIndex;
-
-			}
-
-		}
-
-	}
-	//following code disables respawnroom player blocking. This part was made by myself
-	x = -1
-	int RespawnRoomBlockerIndex;
-	HasFound = true;
-
-	while(HasFound) {
-
-		RespawnRoomBlockerIndex = FindEntityByClassname (x, "func_respawnroomvisualizer"); //finds blockers
-
-		if(RespawnRoomBlockerIndex==-1) {//breaks the loop if no matching entity has been found
-
-			HasFound=false;
-
-		}else{
-
-			if (IsValidEntity(RespawnRoomBlockerIndex)) {
-
-				AcceptEntityInput(RespawnRoomBlockerIndex, "Kill"); //Deletes the blocker
-				x = RespawnRoomBlockerIndex;
-
-			}
-
-		}
-
-	}
+	function_deleteEntities("func_door",true);
+	function_deleteEntities("func_door_rotating",true);
+	function_deleteEntities("func_brush",false);
+	function_deleteEntities("func_respawnroomvisualizer",false);
+	function_sendEntitiesInput("trigger_teleport","Enable");
 
 }
 /*
@@ -801,5 +723,50 @@ public void function_SafeTeamChange(int client, TFTeam team){
 
 
 	}
+}
 
+public void function_sendEntitiesInput(const char[] entityname, const char[] input){
+
+	int x = -1
+	int EntIndex;
+	bool HasFound = true;
+
+	while(HasFound) {
+
+		EntIndex = FindEntityByClassname (x, entityname); //finds doors
+
+		if(EntIndex==-1) {//breaks the loop if no matching entity has been found
+
+			HasFound=false;
+
+		}else{
+
+			if (IsValidEntity(EntIndex)) {
+
+				AcceptEntityInput(EntIndex, input); //Deletes the door it.
+				x = EntIndex;
+			}
+		}
+	}
+}
+
+public void function_deleteEntities(const char[] entityname, bool isDoor){
+
+	if(isDoor){
+		function_sendEntitiesInput(entityname, "Open");
+	}
+	function_sendEntitiesInput(entityname,"Kill");
+
+}
+
+public int function_countPlayers(){
+	int count=0;
+	for(int i=0;i<64;i++){
+
+		if(DiedYet[i]!=0){
+			count++;
+		}
+
+	}
+	return count;
 }
