@@ -59,8 +59,6 @@ public void OnPluginStart (){
 	
 	LoadTranslations("engiesVSmedics.phrases");
 }
-
-
 /*
  * This method disables respawn times and prevents teams auto balance.
  * It also makes the server ban the idle players immediatly, only switching
