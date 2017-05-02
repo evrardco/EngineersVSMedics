@@ -56,8 +56,8 @@
 		
 	"version"
 	{
-		"en"	"This server runs Engineers vs Zombies V1.2.1"
-		"es"	"Este servidor esta usando Engineers vs Zombies V1.2.1"
+		"en"	"This server runs Engineers vs Zombies V1.2.2"
+		"es"	"Este servidor esta usando Engineers vs Zombies V1.2.2"
 	}
 	
 	"red_goal"
