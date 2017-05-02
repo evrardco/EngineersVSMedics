@@ -1,8 +1,8 @@
-#include<sourcemod>
-#include<sdktools>
-#include<tf2>
-#include<tf2_stocks>
-#include<clients>
+#include <sourcemod>
+#include <sdktools>
+#include <tf2>
+#include <tf2_stocks>
+#include <clients>
 
 int DiedYet[64]; //this array stores wether a player is in the game and wether a player is in blue or red team
 int GameStarted=0; //this int stores the amount of time the game has been started, resets when the game ends.
@@ -22,7 +22,7 @@ bool SuperZombies = false;
  *	when a player is connected it has its DiedYet value set to -1 if the game has started, 1 else.
  *	when a player dies, it has its DiedYet value set to -1 too.
  *  if a player has its DiedYet value set to -1, it will spawn as a blue medic
- * 	if a player has its DiedYet value set to 1, it will spawn as a red engineer.
+ *      if a player has its DiedYet value set to 1, it will spawn as a red engineer.
  *	Any sentry will instantly be destroyed and blue medics can only use melee weapons.
  */
 
@@ -34,7 +34,7 @@ public Plugin myinfo ={
 	url = "noSiteYet"
 };
 
-public void OnPluginStart(){
+public void OnPluginStart (){
 	PrintToServer("Engies vs Medics V1.2 by shewowkees, inspired by Muselk.");
 	HookEvent("player_spawn",Event_PlayerSpawnChangeClass,EventHookMode_Post);
 	HookEvent("player_spawn",Event_PlayerSpawnChangeTeam,EventHookMode_Pre);
@@ -78,20 +78,20 @@ public OnMapStart(){
 }
 // public OnEventShutdown()
 // {
-	// UnHookEvent("player_spawn",Event_PlayerSpawnChangeClass);
-	// UnHookEvent("player_spawn",Event_PlayerSpawnChangeTeam);
-	// UnHookEvent("player_death",Event_PlayerDeath);
-	// UnHookEvent("tf_game_over",Event_TFGameOver);
-	// UnHookEvent("player_regenerate",Event_PlayerRegenerate);
-	// UnHookEvent("teamplay_round_start", Event_RoundStart);
-	// UnHookEvent("teamplay_waiting_begins",Event_WaitingBegins);
-	// UnHookEvent("player_disconnect",Event_PlayerDisconnect);
+// UnHookEvent("player_spawn",Event_PlayerSpawnChangeClass);
+// UnHookEvent("player_spawn",Event_PlayerSpawnChangeTeam);
+// UnHookEvent("player_death",Event_PlayerDeath);
+// UnHookEvent("tf_game_over",Event_TFGameOver);
+// UnHookEvent("player_regenerate",Event_PlayerRegenerate);
+// UnHookEvent("teamplay_round_start", Event_RoundStart);
+// UnHookEvent("teamplay_waiting_begins",Event_WaitingBegins);
+// UnHookEvent("player_disconnect",Event_PlayerDisconnect);
 // }
 /*
  * This method initializes DiedYet of the connecting client to the right value.
  */
 public void OnClientPostAdminCheck(int client){
-	if(ZombieStarted){
+	if(ZombieStarted) {
 		DiedYet[client]=-1;
 	}else{
 		DiedYet[client]=1;
@@ -130,17 +130,17 @@ public Action CommandListener_Build(client, const String:command[], argc)
 	GetCmdArg(1, sObjectType, sizeof(sObjectType));
 
 	// Get object mode, type and client's team
-			new iObjectType = StringToInt(sObjectType),
-			iTeam       = GetClientTeam(client);
+	new iObjectType = StringToInt(sObjectType),
+	iTeam       = GetClientTeam(client);
 
 	// If invalid object type passed, or client is not on Blu or Red
-	if(iObjectType < TFObject_Dispenser || iObjectType > TFObject_Sentry || iTeam < TFTeam_Red){
+	if(iObjectType < view_as<int>(TFObject_Dispenser) || iObjectType > view_as<int>(TFObject_Sentry) || iTeam < view_as<int>(TFTeam_Red) ) {
 
 		return Plugin_Continue;
 	}
 
 	//Blocks sentry building
-	else if(iObjectType==TFObject_Sentry){
+	else if(iObjectType==view_as<int>(TFObject_Sentry) ) {
 		PrintToChat(client, "\x05[EVZ]:\x01 You can't build sentries in this gamemode !");
 		return Plugin_Handled;
 	}
@@ -151,20 +151,20 @@ public Action CommandListener_Build(client, const String:command[], argc)
 public Action CommandListener_ChangeTeam(client, const String:command[],argc){
 	decl String:arg1[256]
 	GetCmdArg(1, arg1, sizeof(arg1));
-	if(strcmp(arg1,"blue",false)==0 && DiedYet[client] == -1){
+	if(strcmp(arg1,"blue",false)==0 && DiedYet[client] == -1) {
 
 		return Plugin_Continue;
 
-	}else if(DiedYet[client]==-1){
+	}else if(DiedYet[client]==-1) {
 
 		ClientCommand(client,"jointeam blue");
 
 	}
-	if(strcmp(arg1,"red",false)==0 && DiedYet[client]== 1){
+	if(strcmp(arg1,"red",false)==0 && DiedYet[client]== 1) {
 
 		return Plugin_Continue;
 
-	}else if(DiedYet[client]==1){
+	}else if(DiedYet[client]==1) {
 
 		ClientCommand(client,"jointeam red");
 
@@ -181,20 +181,20 @@ public Action CommandListener_ChangeTeam(client, const String:command[],argc){
 public Action CommandListener_ChangeClass(client,const String:command[], argc){
 	decl String:arg1[256]
 	GetCmdArg(1, arg1, sizeof(arg1));
-	if(strcmp(arg1,"medic",false)==0 && DiedYet[client] == -1){
+	if(strcmp(arg1,"medic",false)==0 && DiedYet[client] == -1) {
 
 		return Plugin_Continue;
 
-	}else if(DiedYet[client]==-1){
+	}else if(DiedYet[client]==-1) {
 
 		ClientCommand(client,"joinclass medic");
 
 	}
-	if(strcmp(arg1,"engineer",false)==0 && DiedYet[client]== 1){
+	if(strcmp(arg1,"engineer",false)==0 && DiedYet[client]== 1) {
 
 		return Plugin_Continue;
 
-	}else if(DiedYet[client]==1){
+	}else if(DiedYet[client]==1) {
 
 		ClientCommand(client,"joinclass engineer");
 
@@ -224,43 +224,43 @@ public Action CommandListener_Spectate(client, const String:command[], argc){
 	return Plugin_Handled;
 }
 
- /*
+/*
  * This method forces the spawning player to switch to the right team BEFORE he appears
  */
- public Action:Event_PlayerSpawnChangeTeam(Event event, const char[] name, bool dontBroadcast){
+public Action Event_PlayerSpawnChangeTeam(Event event, const char[] name, bool dontBroadcast){
 
-	 int client = GetClientOfUserId(event.GetInt("userid"));
-	if(DiedYet[client]==-1 && TF2_GetClientTeam(client)==TFTeam_Red){ //if client is supposed to be a blue medic
-		function_setNextTeam(client,TFTeam_Blue);
+	int client = GetClientOfUserId(event .GetInt("userid"));
+	if(DiedYet[client]==-1 && TF2_GetClientTeam(client)==TFTeam_Red) { //if client is supposed to be a blue medic
+		function_SafeTeamChange(client,TFTeam_Blue);
 		TF2_RespawnPlayer(client);
 
-	}else if(DiedYet[client]==1){ //if the client is supposed to be a red engineer.
+	}else if(DiedYet[client]==1) { //if the client is supposed to be a red engineer.
 
-		if( TF2_GetClientTeam(client)==TFTeam_Blue ){
+		if( TF2_GetClientTeam(client)==TFTeam_Blue ) {
 			DiedYet[client]=-1;
 		}
 
 	}
- }
- /*
+}
+/*
  * This method forces the player to be on the right team, the right class and to use the right weapons.
  */
-public Action:Event_PlayerSpawnChangeClass(Event event, const char[] name, bool dontBroadcast){
+public Action Event_PlayerSpawnChangeClass(Event event, const char[] name, bool dontBroadcast){
 
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(DiedYet[client]==0){
+	int client = GetClientOfUserId(event .GetInt("userid"));
+	if(DiedYet[client]==0) {
 
-		if(GameStarted>0){
+		if(GameStarted>0) {
 			DiedYet[client]=-1;
 		}else{
 			DiedYet[client]=1;
 		}
 
 	}
-	if(DiedYet[client]==-1 || DiedYet[client]==0){ //if client is supposed to be a blue medic
+	if(DiedYet[client]==-1 || DiedYet[client]==0) { //if client is supposed to be a blue medic
 
 
-		if( TF2_GetPlayerClass(client) != TFClass_Medic){ //if he isn't a medic, changes his class,  him and makes him respawn.
+		if( TF2_GetPlayerClass(client) != TFClass_Medic) { //if he isn't a medic, changes his class,  him and makes him respawn.
 			PrintToChat(client,"\x05[EVZ]:\x01 In zombie team, you can only be a medic !");
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
 			TF2_RegeneratePlayer(client);
@@ -270,15 +270,15 @@ public Action:Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 		function_StripToMelee(client);
 		function_MakeSuperZombie(client);
 
-	}else if(DiedYet[client]==1){ //if the client is supposed to be a red engineer.
+	}else if(DiedYet[client]==1) { //if the client is supposed to be a red engineer.
 
 
-			if( TF2_GetPlayerClass(client) != TFClass_Engineer){ //if the client isn't an engineer, changes his class, kills him and makes him respawn
-				PrintToChat(client,"\x05[EVZ]:\x01 In survivor team, you can only be an engineer !");
-				TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
-				DiedYet[client]=1; //sets the diedyet value to 1 because the suicide would set it to -1
-				TF2_RegeneratePlayer(client);
-			}
+		if( TF2_GetPlayerClass(client) != TFClass_Engineer) {        //if the client isn't an engineer, changes his class, kills him and makes him respawn
+			PrintToChat(client,"\x05[EVZ]:\x01 In survivor team, you can only be an engineer !");
+			TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
+			DiedYet[client]=1;         //sets the diedyet value to 1 because the suicide would set it to -1
+			TF2_RegeneratePlayer(client);
+		}
 
 
 	}
@@ -287,14 +287,14 @@ public Action:Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 /*
  * This method updates the DiedValue of a player if needed,changes his team and checks for victory
  */
-public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
+public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
 
 
 
-	if(WaitingEnded && ZombieStarted && !IsSettingTeam){
+	if(WaitingEnded && ZombieStarted && !IsSettingTeam) {
 
-		int client = GetClientOfUserId(event.GetInt("userid"));
-		if(GameStarted>0){
+		int client = GetClientOfUserId(event .GetInt("userid"));
+		if(GameStarted>0) {
 			PrintToChat(client,"\x05[EVZ]:\x01 You have been infected, you can't go back to survivor team !");
 			DiedYet[client] = -1;
 			TF2_ChangeClientTeam(client,TFTeam_Blue);
@@ -311,9 +311,9 @@ public Action:Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 /*
  * This method resets a player's DiedYet value when he disconnects.
  */
-public Action:Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast){
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast){
 
-	int client = GetClientOfUserId(event.GetInt("userid"));
+	int client = GetClientOfUserId(event .GetInt("userid"));
 	DiedYet[client] = 0;
 	function_CheckVictory();
 
@@ -328,31 +328,31 @@ public Action:Event_PlayerDisconnect(Event event, const char[] name, bool dontBr
 /*
  * This functions decrements GameStarted because it will be incremented when the waiting begins
  */
-public Action:Event_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
+public Action Event_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
 	GameStarted=-1;
 }
 /*
  * This method deletes all unwanted elements from the map and balances the teams
  */
-public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcast){
+public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast){
 	SuperZombies = false;
 	ServerCommand("sv_gravity 800");
-	if(RedWonHandle!=INVALID_HANDLE){
+	if(RedWonHandle!=INVALID_HANDLE) {
 		KillTimer(RedWonHandle,false);
 		RedWonHandle=INVALID_HANDLE;
 	}
-	if(SuperZombiesTimerHandle!=INVALID_HANDLE){
+	if(SuperZombiesTimerHandle!=INVALID_HANDLE) {
 		KillTimer(SuperZombiesTimerHandle,false);
 		SuperZombiesTimerHandle=INVALID_HANDLE;
 	}
 	float ActualRoundTime = GetConVarFloat(zve_round_time)+GetConVarFloat(zve_setup_time);
-  RedWonHandle = CreateTimer(ActualRoundTime,RedWon);
-	if(GetConVarFloat(zve_super_zombies)>0.0){
+	RedWonHandle = CreateTimer(ActualRoundTime,RedWon);
+	if(GetConVarFloat(zve_super_zombies)>0.0) {
 		SuperZombiesTimerHandle = CreateTimer(ActualRoundTime-GetConVarFloat(zve_super_zombies), SuperZombiesTimer);
 	}
 
 	function_PrepareMap();
-	if(WaitingEnded){
+	if(WaitingEnded) {
 		function_ResetTeams(true);
 	}
 
@@ -367,7 +367,7 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 
 }
 
-public Action:Event_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
+public Action Event_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
 
 	GameStarted = 0;
 
@@ -380,8 +380,8 @@ public Action SuperZombiesTimer(Handle timer){
 	PrintToChatAll("\x05[EVZ]:\x01 Zombies have gained crits and higher jump height !");
 	SuperZombies = true;
 	ServerCommand("sv_gravity 500");
-	for(int i=0;i<64;i++){
-		if(DiedYet[i]==-1){
+	for(int i=0; i<64; i++) {
+		if(DiedYet[i]==-1) {
 
 			function_MakeSuperZombie(i);
 
@@ -394,10 +394,10 @@ public Action SuperZombiesTimer(Handle timer){
 
 public Action Stun(Handle timer){
 	function_StunTeam(TFTeam_Blue);
-	if(WaitingEnded){
+	if(WaitingEnded) {
 		float setupTime = GetConVarFloat(zve_setup_time);
 		CreateTimer(setupTime, Infection);
-		if(setupTime>11.0){
+		if(setupTime>11.0) {
 			CreateTimer(setupTime-11.0, CountDownStart);
 		}
 	}
@@ -411,7 +411,7 @@ public Action CountDownStart(Handle timer){
 
 }
 public Action CountDown(Handle timer){
-	if(CountDownCounter<10){
+	if(CountDownCounter<10) {
 		char message[] = "\x05[EVZ]:\x01 ";
 		char timeLeft[3];
 		IntToString(10-CountDownCounter, timeLeft, 3);
@@ -457,43 +457,43 @@ public function_PrepareMap(){
 
 	//code below is from Perky in Hide n seek plugin, it disables cp and ctf gamemodes.
 	//following code disables cp and pl
-	new edict_index;
-	new x = -1;
-	for (new i = 0; i < 5; i++){
-			edict_index = FindEntityByClassname(x, "trigger_capture_area"); //finds any capture area
-			if (IsValidEntity(edict_index)){
-				SetVariantInt(0); //Argument value is 0 if the input needs any
-				AcceptEntityInput(edict_index, "SetTeam"); //set its team to 0
-				AcceptEntityInput(edict_index, "Disable"); // Disables it
-				x = edict_index;
-			}
+	int edict_index;
+	int x = -1;
+	for (new i = 0; i < 5; i++) {
+		edict_index = FindEntityByClassname(x, "trigger_capture_area");         //finds any capture area
+		if (IsValidEntity(edict_index)) {
+			SetVariantInt(0);         //Argument value is 0 if the input needs any
+			AcceptEntityInput(edict_index, "SetTeam");         //set its team to 0
+			AcceptEntityInput(edict_index, "Disable");         // Disables it
+			x = edict_index;
+		}
 	}
 	//following code disables flags
 	x = -1;
-	new flag_index;
-	for (new i = 0; i < 5; i++){
+	int flag_index;
+	for (new i = 0; i < 5; i++) {
 		flag_index = FindEntityByClassname(x, "item_teamflag"); //finds flags
-		if (IsValidEntity(flag_index)){
+		if (IsValidEntity(flag_index)) {
 			AcceptEntityInput(flag_index, "Disable"); //disables them
 			x = flag_index;
 		}
 	}
 
-	 x = -1
-	new timer_index;
+	x = -1
+	int timer_index;
 	bool HasFound = true;
 
-	while(HasFound){
+	while(HasFound) {
 
 		timer_index = FindEntityByClassname (x, "team_round_timer"); //finds timers
 
-		if(timer_index==-1){//breaks the loop if no matching entity has been found
+		if(timer_index==-1) {//breaks the loop if no matching entity has been found
 
 			HasFound=false;
 
 		}else{
 
-			if (IsValidEntity(timer_index)){
+			if (IsValidEntity(timer_index)) {
 				SetVariantFloat(0.0);
 				AcceptEntityInput(timer_index, "SetSetupTime");
 				SetVariantInt(GetConVarInt(zve_round_time)+GetConVarInt(zve_setup_time));
@@ -511,23 +511,23 @@ public function_PrepareMap(){
 /*
  * This function deletes door and spawnroom things
  */
- public function_DeleteDoors(){//following code opens all doors. This part was made by myself
+public function_DeleteDoors(){ //following code opens all doors. This part was made by myself
 
 	int x = -1
-	new RespawnRoomIndex;
+	int RespawnRoomIndex;
 	bool HasFound = true;
 
-	while(HasFound){
+	while(HasFound) {
 
 		RespawnRoomIndex = FindEntityByClassname (x, "func_door"); //finds doors
 
-		if(RespawnRoomIndex==-1){//breaks the loop if no matching entity has been found
+		if(RespawnRoomIndex==-1) {//breaks the loop if no matching entity has been found
 
 			HasFound=false;
 
 		}else{
 
-			if (IsValidEntity(RespawnRoomIndex)){
+			if (IsValidEntity(RespawnRoomIndex)) {
 				AcceptEntityInput(RespawnRoomIndex,"Open");
 				AcceptEntityInput(RespawnRoomIndex, "Kill"); //Deletes the door it.
 				x = RespawnRoomIndex;
@@ -539,20 +539,20 @@ public function_PrepareMap(){
 	}
 	//following code disables respawnroom player blocking. This part was made by myself
 	x = -1
-	new RespawnRoomBlockerIndex;
+	int RespawnRoomBlockerIndex;
 	HasFound = true;
 
-	while(HasFound){
+	while(HasFound) {
 
 		RespawnRoomBlockerIndex = FindEntityByClassname (x, "func_respawnroomvisualizer"); //finds blockers
 
-		if(RespawnRoomBlockerIndex==-1){//breaks the loop if no matching entity has been found
+		if(RespawnRoomBlockerIndex==-1) {//breaks the loop if no matching entity has been found
 
 			HasFound=false;
 
 		}else{
 
-			if (IsValidEntity(RespawnRoomBlockerIndex)){
+			if (IsValidEntity(RespawnRoomBlockerIndex)) {
 
 				AcceptEntityInput(RespawnRoomBlockerIndex, "Kill"); //Deletes the blocker
 				x = RespawnRoomBlockerIndex;
@@ -563,7 +563,7 @@ public function_PrepareMap(){
 
 	}
 
- }
+}
 /*
  * This functions makes a team given in argument win.
  * The code is from perky, author of the hide n seek plugin
@@ -571,26 +571,26 @@ public function_PrepareMap(){
  * @param team		The TFTeam that will win.
  * @return -
  */
-public function_teamWin(TFTeam team) //code from hide n seek
+public void function_teamWin(TFTeam team) //code from hide n seek
 {
 	//this code kills the timer that makes redteam win
 
 	//this is the code that actually makes a team win
-	new edict_index = FindEntityByClassname(-1, "team_control_point_master");
+	int edict_index = FindEntityByClassname(-1, "team_control_point_master");
 	if (edict_index == -1)
 	{
-		new g_ctf = CreateEntityByName("team_control_point_master");
+		int g_ctf = CreateEntityByName("team_control_point_master");
 		DispatchSpawn(g_ctf);
 		AcceptEntityInput(g_ctf, "Enable");
 	}
 
-	new search = FindEntityByClassname(-1, "team_control_point_master")
-	SetVariantInt(team);
+	int search = FindEntityByClassname(-1, "team_control_point_master")
+	SetVariantInt(view_as<int>(team) );
 	AcceptEntityInput(search, "SetWinner");
 
-		//AcceptEntityInput(search, "SetTeam");
-		//AcceptEntityInput(search, "RoundWin");
-		//AcceptEntityInput(search, "kill");
+	//AcceptEntityInput(search, "SetTeam");
+	//AcceptEntityInput(search, "RoundWin");
+	//AcceptEntityInput(search, "kill");
 
 
 
@@ -609,15 +609,15 @@ public function_teamWin(TFTeam team) //code from hide n seek
 
 
 
-public function_ResetTeams(bool kills){
+public void function_ResetTeams(bool kills){
 
 	IsSettingTeam=true;
 	function_AllEngineers(false);
 	//following code counts the connected players
 	int PlayerCount=0;
-	for(int i=0;i<64;i++){
+	for(int i=0; i<64; i++) {
 
-		if(DiedYet[i]!=0){
+		if(DiedYet[i]!=0) {
 
 			PlayerCount++;
 
@@ -627,52 +627,52 @@ public function_ResetTeams(bool kills){
 
 	//following code will compute the needed starting blue Medics, depending on the player count.
 	int StartingMedics = 0;
-	if(PlayerCount > 1){ //if there is 2 or more players
+	if(PlayerCount > 1) { //if there is 2 or more players
 
 		StartingMedics=1;
 
 	}
-	if(PlayerCount>5){
+	if(PlayerCount>5) {
 
 		StartingMedics=2;
 
 	}
-	if(PlayerCount >10){
+	if(PlayerCount >10) {
 
 		StartingMedics=3;
 
 	}
-	if(PlayerCount >18){
+	if(PlayerCount >18) {
 
 		StartingMedics=4;
 
 	}
 
 	//following code will make needed players start as medic
-	while(StartingMedics>0){
+	while(StartingMedics>0) {
 		int i = GetRandomInt(0,63);
-			if(DiedYet[i]==1){
-				DiedYet[i]=-1;
-				StartingMedics--;
+		if(DiedYet[i]==1) {
+			DiedYet[i]=-1;
+			StartingMedics--;
 
-			}
+		}
 	}
 	//Kills all the players
-	if(kills){
+	if(kills) {
 
-		for(int i=0;i<64;i++){
+		for(int i=0; i<64; i++) {
 
-		if(DiedYet[i]==-1){
+			if(DiedYet[i]==-1) {
 
-			if(IsClientInGame(i)){
-						function_setNextTeam(i,TFTeam_Blue);
-						TF2_RespawnPlayer(i);
+				if(IsClientInGame(i)) {
+					function_SafeTeamChange(i,TFTeam_Blue);
+					TF2_RespawnPlayer(i);
+
+				}
 
 			}
 
 		}
-
-	}
 
 	}
 
@@ -689,43 +689,43 @@ public function_ResetTeams(bool kills){
  *
  *
  */
-public function_CheckVictory(){
+public void function_CheckVictory(){
 
-		if(ZombieStarted==false){
-			return;
-		}
+	if(ZombieStarted==false) {
+		return;
+	}
 
-		bool AllEngineersDead = true;
-		for(int i=0;i<64;i++){
-			if(DiedYet[i]==1){
+	bool AllEngineersDead = true;
+	for(int i=0; i<64; i++) {
+		if(DiedYet[i]==1) {
 
-				AllEngineersDead=false;
-
-			}
+			AllEngineersDead=false;
 
 		}
-		if(AllEngineersDead){
-			function_teamWin(TFTeam_Blue);
-			ZombieStarted=false;
-		}
+
+	}
+	if(AllEngineersDead) {
+		function_teamWin(TFTeam_Blue);
+		ZombieStarted=false;
+	}
 
 }
 
 /*
  * This function puts all players to red engineers.
  *
- * @param kill 		if true, will kill the players and force their respawn.
+ * @param kill          if true, will kill the players and force their respawn.
  * @return -
  *
  *
  */
- public function_AllEngineers(bool kill){
-	 for(int i=0;i<64;i++){
-		if(DiedYet[i]!=0){
+public void function_AllEngineers(bool kill){
+	for(int i=0; i<64; i++) {
+		if(DiedYet[i]!=0) {
 			DiedYet[i]=1;
-			function_setNextTeam(i,TFTeam_Red);
+			function_SafeTeamChange(i,TFTeam_Red);
 			TF2_RespawnPlayer(i);
-			if(kill==true){
+			if(kill==true) {
 				ForcePlayerSuicide(i);
 				TF2_RegeneratePlayer(i);
 			}
@@ -734,72 +734,72 @@ public function_CheckVictory(){
 
 	}
 
- }
- /* This function stuns all the players of a given team
-  *
-  */
+}
+/* This function stuns all the players of a given team
+ *
+ */
 
-  public function_StunTeam(int team){
-	  float time = GetConVarFloat(zve_setup_time);
-	  if(time>30.0){
-		  time=30.0
-	  }
-	  int cmp=-10;
-	  if(team==TFTeam_Blue){
-		  cmp=-1;
-	  }else if(team==TFTeam_Red){
-		  cmp=1;
-	  }
-
-	  for(int i=0;i<64;i++){
-
-		  if(DiedYet[i]==cmp){
-			  TF2_StunPlayer(i, time, 0.0, TF_STUNFLAG_BONKSTUCK , 0);
-				TF2_AddCondition(i,view_as<TFCond>(55), GetConVarFloat(zve_setup_time)+GetConVarFloat(zve_tanks), 0);
-		  }
-
-	  }
-  }
-  /*
-   *This function resets every global scope variable
-   */
-  public void function_ResetPlugin(){
-	  int EmptyDiedYet[64];
-	  DiedYet = EmptyDiedYet;
-	  GameStarted=0; //this int stores the amount of time the game has been started, resets when the game ends.
-	  IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
-    ZombieStarted = false;
-  }
-
-	public void function_StripToMelee(int client){
-
-		TF2_AddCondition(client, view_as<TFCond>(85), TFCondDuration_Infinite, 0);
-		TF2_AddCondition(client, view_as<TFCond>(41), TFCondDuration_Infinite, 0);
-		TF2_RemoveCondition(client, view_as<TFCond>(85) );
-		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-
+public void function_StunTeam(TFTeam team){
+	float time = GetConVarFloat(zve_setup_time);
+	if(time>30.0) {
+		time=30.0
+	}
+	int cmp=-10;
+	if(team==TFTeam_Blue) {
+		cmp=-1;
+	}else if(team==TFTeam_Red) {
+		cmp=1;
 	}
 
-	public void function_MakeSuperZombie(int client){
+	for(int i=0; i<64; i++) {
 
-		if(SuperZombies){
-			TF2_AddCondition(client, view_as<TFCond>(38), TFCondDuration_Infinite, 0);
-		}
-
-
-	}
-
-	public void function_setNextTeam(int client, TFTeam team){
-
-		if(IsValidEntity(client) && IsClientInGame(client)){
-
-			new EntProp = GetEntProp(client, Prop_Send, "m_lifeState");
-			SetEntProp(client, Prop_Send, "m_lifeState", 2);
-			ChangeClientTeam(client, team);
-			SetEntProp(client, Prop_Send, "m_lifeState", EntProp);
-
-
+		if(DiedYet[i]==cmp) {
+			TF2_StunPlayer(i, time, 0.0, TF_STUNFLAG_BONKSTUCK, 0);
+			TF2_AddCondition(i,view_as<TFCond>(55), GetConVarFloat(zve_setup_time)+GetConVarFloat(zve_tanks), 0);
 		}
 
 	}
+}
+/*
+ * This function resets every global scope variable
+ */
+public void function_ResetPlugin(){
+	int EmptyDiedYet[64];
+	DiedYet = EmptyDiedYet;
+	GameStarted=0;   //this int stores the amount of time the game has been started, resets when the game ends.
+	IsSettingTeam = false;   //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
+	ZombieStarted = false;
+}
+
+public void function_StripToMelee(int client){
+
+	TF2_AddCondition(client, view_as<TFCond>(85), TFCondDuration_Infinite, 0);
+	TF2_AddCondition(client, view_as<TFCond>(41), TFCondDuration_Infinite, 0);
+	TF2_RemoveCondition(client, view_as<TFCond>(85) );
+	TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+	TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
+
+}
+
+public void function_MakeSuperZombie(int client){
+
+	if(SuperZombies) {
+		TF2_AddCondition(client, view_as<TFCond>(38), TFCondDuration_Infinite, 0);
+	}
+
+
+}
+
+public void function_SafeTeamChange(int client, TFTeam team){
+
+	if(IsValidEntity(client) && IsClientInGame(client)) {
+
+		int EntProp = GetEntProp(client, Prop_Send, "m_lifeState");
+		SetEntProp(client, Prop_Send, "m_lifeState", 2);
+		ChangeClientTeam(client, view_as<int>(team) );
+		SetEntProp(client, Prop_Send, "m_lifeState", EntProp);
+
+
+	}
+
+}
