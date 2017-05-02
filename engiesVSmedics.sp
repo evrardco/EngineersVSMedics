@@ -151,7 +151,7 @@ public Action CommandListener_Build(client, const String:command[], argc)
 
 	//Blocks sentry building
 	else if(iObjectType==view_as<int>(TFObject_Sentry) ) {
-		PrintToChat(client, "%t", "sentry_restric");
+		PrintToChat(client, "\x05[EVZ]:\x01 %t", "sentry_restric");
 		return Plugin_Handled;
 	}
 
@@ -179,7 +179,7 @@ public Action CommandListener_ChangeTeam(client, const String:command[],argc){
 		ClientCommand(client,"jointeam red");
 
 	}
-	PrintToChat(client, "%t", "betray_team");
+	PrintToChat(client, "\x05[EVZ]:\x01 %t", "betray_team");
 	return Plugin_Handled;
 	// decl String:arg1[256]
 	// GetCmdArgString(arg1, sizeof(arg1));
@@ -209,7 +209,7 @@ public Action CommandListener_ChangeClass(client,const String:command[], argc){
 		ClientCommand(client,"joinclass engineer");
 
 	}
-	PrintToChat(client, "%t", "change_class");
+	PrintToChat(client, "\x05[EVZ]:\x01 %t", "change_class");
 	return Plugin_Handled;
 	// decl String:arg1[256]
 	// GetCmdArgString(arg1, sizeof(arg1));
@@ -218,19 +218,19 @@ public Action CommandListener_ChangeClass(client,const String:command[], argc){
 }
 
 public Action CommandListener_Kill(client, const String:command[], argc){
-	PrintToChat(client, "%t", "kill_me");
+	PrintToChat(client, "\x05[EVZ]:\x01 %t", "kill_me");
 	return Plugin_Handled;
 
 }
 
 public Action CommandListener_explode(client, const String:command[], argc){
-	PrintToChat(client, "%t", "kill_me_explode");
+	PrintToChat(client, "\x05[EVZ]:\x01 %t", "kill_me_explode");
 	return Plugin_Handled;
 
 }
 
 public Action CommandListener_Spectate(client, const String:command[], argc){
-	PrintToChat(client, "%t", "change_spectator");
+	PrintToChat(client, "\x05[EVZ]:\x01 %t", "change_spectator");
 	return Plugin_Handled;
 }
 
@@ -271,7 +271,7 @@ public Action Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 
 
 		if( TF2_GetPlayerClass(client) != TFClass_Medic) { //if he isn't a medic, changes his class,  him and makes him respawn.
-			PrintToChat(client, "%t", "only_medic");
+			PrintToChat(client, "\x05[EVZ]:\x01 %t", "only_medic");
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
 			TF2_RegeneratePlayer(client);
 		}
@@ -284,7 +284,7 @@ public Action Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 
 
 		if( TF2_GetPlayerClass(client) != TFClass_Engineer) {        //if the client isn't an engineer, changes his class, kills him and makes him respawn
-			PrintToChat(client, "%t", "only_engineer");
+			PrintToChat(client, "\x05[EVZ]:\x01 %t", "only_engineer");
 			TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
 			DiedYet[client]=1;         //sets the diedyet value to 1 because the suicide would set it to -1
 			TF2_RegeneratePlayer(client);
@@ -305,7 +305,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 
 		int client = GetClientOfUserId(event .GetInt("userid"));
 		if(GameStarted>0) {
-			PrintToChat(client, "%t", "infected");
+			PrintToChat(client, "\x05[EVZ]:\x01 %t", "infected");
 			DiedYet[client] = -1;
 			TF2_ChangeClientTeam(client,TFTeam_Blue);
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
@@ -368,10 +368,10 @@ public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 
 	CreateTimer(2.30,Stun);
 	GameStarted++;
-	PrintToChatAll("%t", "version");
-	PrintToChatAll("%t", "red_goal");
-	PrintToChatAll("%t", "blue_goal");
-	PrintToChatAll("%t", "source_plugin");
+	PrintToChatAll("\x05[EVZ]:\x01 %t", "version");
+	PrintToChatAll("\x05[EVZ]:\x01 %t", "red_goal");
+	PrintToChatAll("\x05[EVZ]:\x01 %t", "blue_goal");
+	PrintToChatAll("\x05[EVZ]:\x01 %t", "source_plugin");
 	//PrintToServer("GameStarted incremented");//Debugging instruction
 
 
@@ -387,7 +387,7 @@ public Action Event_TFGameOver(Event event, const char[] name, bool dontBroadcas
 
 //TIMERS
 public Action SuperZombiesTimer(Handle timer){
-	PrintToChatAll("%t", "power_up");
+	PrintToChatAll("\x05[EVZ]:\x01 %t", "power_up");
 	SuperZombies = true;
 	ServerCommand("sv_gravity 500");
 	for(int i=0; i<64; i++) {
@@ -417,7 +417,7 @@ public Action Stun(Handle timer){
 public Action CountDownStart(Handle timer){
 
 	CreateTimer(1.0, CountDown, _, TIMER_REPEAT);
-	PrintToChatAll("%t", "infection_start");
+	PrintToChatAll("\x05[EVZ]:\x01 %t", "infection_start");
 
 }
 public Action CountDown(Handle timer){
@@ -440,7 +440,7 @@ public Action CountDown(Handle timer){
 }
 
 public Action Infection(Handle timer){
-	PrintToChatAll("%t", "infection_unleashed");
+	PrintToChatAll("\x05[EVZ]:\x01 %t", "infection_unleashed");
 	ZombieStarted = true;
 	function_DeleteDoors();
 }
