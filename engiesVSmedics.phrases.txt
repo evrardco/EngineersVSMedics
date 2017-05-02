@@ -1,0 +1,98 @@
+"Phrases"
+{
+	"sentry_restric"
+	{
+		"en"	"\x05[EVZ]:\x01 You can't build sentries in this gamemode !"
+		"es"	"\x05[EVZ]:\x01 No puedes construir centinelas en este modo de juego!"
+	}
+	
+	"betray_team"
+	{
+		"en"	"\x05[EVZ]:\x01 You can't betray your team in this gamemode !"
+		"es"	"\x05[EVZ]:\x01 No puedes traicionar a tus compañeros!"
+	}
+	
+	"change_class"
+	{
+		"en"	"\x05[EVZ]:\x01 You can't change your class in this gamemode !"
+		"es"	"\x05[EVZ]:\x01 No puedes cambiar de clase en este modo de juego!"
+	}
+	
+	"kill_me"
+	{
+		"en"	"\x05[EVZ]:\x01 You can't kill yourself in this gamemode !"
+		"es"	"\x05[EVZ]:\x01 No puedes suicidarte en este modo de juego!"
+	}
+	
+	"kill_me_explode"
+	{
+		"en"	"\x05[EVZ]:\x01 You can't kill yourself in this gamemode !"
+		"es"	"\x05[EVZ]:\x01 No puedes suicidarte en este modo de juego!"
+	}
+	
+	"change_spectator"
+	{
+		"en"	"\x05[EVZ]:\x01 You can't go to spectator in this gamemode !"
+		"es"	"\x05[EVZ]:\x01 No puedes ir al modo espectador en este modo de juego!"
+	}
+	
+	"only_medic"
+	{
+		"en"	"\x05[EVZ]:\x01 In zombie team, you can only be a medic !"
+		"es"	"\x05[EVZ]:\x01 En el equipo zombie, solo puedes ser Medic!"
+	}
+	
+	"only_engineer"
+	{
+		"en"	"\x05[EVZ]:\x01 In survivor team, you can only be an engineer !"
+		"es"	"\x05[EVZ]:\x01 En el equipo supervivientes, solo puedes ser Engineer!"
+	}
+	
+	"infected"
+	{
+		"en"	"\x05[EVZ]:\x01 You have been infected, you can't go back to survivor team !"
+		"es"	"\x05[EVZ]:\x01 Estas infectado, ya no podras volver al equipo de supervivientes!"
+	}
+		
+	"version"
+	{
+		"en"	"\x05[EVZ]:\x01 This server runs Engineers vs Zombies V1.2.1"
+		"es"	"\x05[EVZ]:\x01 Este servidor esta usando Engineers vs Zombies V1.2.1"
+	}
+	
+	"red_goal"
+	{
+		"en"	"\x05[EVZ]:\x01 The goal for engineers (red team) is to survive as long as they can"
+		"es"	"\x05[EVZ]:\x01 El objetivo de los Engineers (equipo rojo) es sobrevivir todo lo posible"
+	}
+	
+	"blue_goal"
+	{
+		"en"	"\x05[EVZ]:\x01 The goal for medics (blue team) is to kill all engineers to turn them into zombies (medics) !"
+		"es"	"\x05[EVZ]:\x01 El objetivo de los Medics (equpo azul) es matar a los Engineers y infectarlos para convertirlos en Zombies!"
+	}
+	
+	"source_plugin"
+	{
+		"en"	"\x05[EVZ]:\x01 This plugin can be downloaded from www.sourcemod.net (sources included)"
+		"es"	"\x05[EVZ]:\x01 Este plugin puede ser descargado de from www.sourcemod.net (sources incluido)"
+	}
+	
+	"power_up"
+	{
+		"en"	"\x05[EVZ]:\x01 Zombies have gained crits and higher jump height !"
+		"es"	"\x05[EVZ]:\x01 Los Zombies consiguieron criticos y aumento de salto!"
+	}
+	
+	"infection_start"
+	{
+		"en"	"\x05[EVZ]:\x01 Infection starts in..."
+		"es"	"\x05[EVZ]:\x01 La Infeccion comienza en..."
+	}
+	
+	"infection_unleashed"
+	{
+		"en"	"\x05[EVZ]:\x01 Zombie medics are now unleashed !"
+		"es"	"\x05[EVZ]:\x01 Los Zombie Medics estan en camino!"
+	}
+}
