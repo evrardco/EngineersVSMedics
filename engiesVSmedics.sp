@@ -43,6 +43,7 @@ public void OnPluginStart (){
 	HookEvent("teamplay_round_start", Event_RoundStart);
 	HookEvent("teamplay_waiting_begins",Event_WaitingBegins,EventHookMode_Post);
 	HookEvent("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
+	HookEvent("player_hurt",Event_PlayerHurt, EventHookMode_Pre);
 	AddCommandListener(CommandListener_Build, "build");
 	AddCommandListener(CommandListener_ChangeClass, "joinclass");
 	AddCommandListener(CommandListener_ChangeTeam, "jointeam");
@@ -72,6 +73,7 @@ public OnMapStart(){
 	ServerCommand("mp_idlemaxtime 10");
 	ServerCommand("mp_waitingforplayers_time 35");
 	ServerCommand("mp_scrambleteams_auto 0");
+	ServerCommand("tf_weapon_criticals_melee 0");
 	WaitingEnded = false;
 
 
@@ -290,6 +292,32 @@ public Action Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 	}
 	function_CheckVictory();
 }
+
+public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast){
+
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+
+	if(DiedYet[attacker]==-1){
+
+		if(IsValidEntity(client) && IsClientInGame(client)&& WaitingEnded && ZombieStarted && !IsSettingTeam) {
+
+			int EntProp = GetEntProp(client, Prop_Send, "m_lifeState");
+			SetEntProp(client, Prop_Send, "m_lifeState", 2);
+			ChangeClientTeam(client, view_as<int>(TFTeam_Blue) );
+			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
+			SetEntProp(client, Prop_Send, "m_lifeState", EntProp);
+			TF2_RegeneratePlayer(client);
+			function_StripToMelee(client);
+			DiedYet[client]=-1;
+			function_CheckVictory();
+
+
+		}
+
+	}
+
+}
 /*
  * This method updates the DiedValue of a player if needed,changes his team and checks for victory
  */
@@ -299,7 +327,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 
 	if(WaitingEnded && ZombieStarted && !IsSettingTeam) {
 
-		int client = GetClientOfUserId(event .GetInt("userid"));
+		int client = GetClientOfUserId(event.GetInt("userid"));
 		if(GameStarted>0) {
 			PrintToChat(client,"\x05[EVZ]:\x01 You have been infected, you can't go back to survivor team !");
 			DiedYet[client] = -1;
