@@ -36,14 +36,14 @@ public Plugin myinfo ={
 
 public void OnPluginStart (){
 	PrintToServer("Engies vs Medics V1.2 by shewowkees, inspired by Muselk.");
-	HookEvent("player_spawn",Event_PlayerSpawnChangeClass,EventHookMode_Post);
-	HookEvent("player_spawn",Event_PlayerSpawnChangeTeam,EventHookMode_Pre);
-	HookEvent("player_death",Event_PlayerDeath,EventHookMode_Post);
-	HookEvent("tf_game_over",Event_TFGameOver,EventHookMode_Post);
-	HookEvent("teamplay_round_start", Event_RoundStart);
-	HookEvent("teamplay_waiting_begins",Event_WaitingBegins,EventHookMode_Post);
-	HookEvent("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
-	HookEvent("player_hurt",Event_PlayerHurt, EventHookMode_Pre);
+	HookEvent("player_spawn",Evt_PlayerSpawnChangeClass,EventHookMode_Post);
+	HookEvent("player_spawn",Evt_PlayerSpawnChangeTeam,EventHookMode_Pre);
+	HookEvent("player_death",Evt_PlayerDeath,EventHookMode_Post);
+	HookEvent("tf_game_over",Evt_TFGameOver,EventHookMode_Post);
+	HookEvent("teamplay_round_start", Evt_RoundStart);
+	HookEvent("teamplay_waiting_begins",Evt_WaitingBegins,EventHookMode_Post);
+	HookEvent("player_disconnect",Evt_PlayerDisconnect,EventHookMode_Post);
+	HookEvent("player_hurt",Evt_PlayerHurt, EventHookMode_Pre);
 	AddCommandListener(CommandListener_Build, "build");
 	AddCommandListener(CommandListener_ChangeClass, "joinclass");
 	AddCommandListener(CommandListener_ChangeTeam, "jointeam");
@@ -84,14 +84,14 @@ public OnMapStart(){
 }
 // public OnEventShutdown()
 // {
-// UnHookEvent("player_spawn",Event_PlayerSpawnChangeClass);
-// UnHookEvent("player_spawn",Event_PlayerSpawnChangeTeam);
-// UnHookEvent("player_death",Event_PlayerDeath);
-// UnHookEvent("tf_game_over",Event_TFGameOver);
-// UnHookEvent("player_regenerate",Event_PlayerRegenerate);
-// UnHookEvent("teamplay_round_start", Event_RoundStart);
-// UnHookEvent("teamplay_waiting_begins",Event_WaitingBegins);
-// UnHookEvent("player_disconnect",Event_PlayerDisconnect);
+// UnHookEvent("player_spawn",Evt_PlayerSpawnChangeClass);
+// UnHookEvent("player_spawn",Evt_PlayerSpawnChangeTeam);
+// UnHookEvent("player_death",Evt_PlayerDeath);
+// UnHookEvent("tf_game_over",Evt_TFGameOver);
+// UnHookEvent("player_regenerate",Evt_PlayerRegenerate);
+// UnHookEvent("teamplay_round_start", Evt_RoundStart);
+// UnHookEvent("teamplay_waiting_begins",Evt_WaitingBegins);
+// UnHookEvent("player_disconnect",Evt_PlayerDisconnect);
 // }
 /*
  * This method initializes DiedYet of the connecting client to the right value.
@@ -239,7 +239,7 @@ public Action CommandListener_Spectate(client, const String:command[], argc){
 /*
  * This method forces the spawning player to switch to the right team BEFORE he appears
  */
-public Action Event_PlayerSpawnChangeTeam(Event event, const char[] name, bool dontBroadcast){
+public Action Evt_PlayerSpawnChangeTeam(Event event, const char[] name, bool dontBroadcast){
 
 	int client = GetClientOfUserId(event .GetInt("userid"));
 	if(DiedYet[client]==-1 && TF2_GetClientTeam(client)==TFTeam_Red) { //if client is supposed to be a blue medic
@@ -257,7 +257,7 @@ public Action Event_PlayerSpawnChangeTeam(Event event, const char[] name, bool d
 /*
  * This method forces the player to be on the right team, the right class and to use the right weapons.
  */
-public Action Event_PlayerSpawnChangeClass(Event event, const char[] name, bool dontBroadcast){
+public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool dontBroadcast){
 
 	int client = GetClientOfUserId(event .GetInt("userid"));
 	if(DiedYet[client]==0) {
@@ -297,7 +297,7 @@ public Action Event_PlayerSpawnChangeClass(Event event, const char[] name, bool 
 	function_CheckVictory();
 }
 
-public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast){
+public Action Evt_PlayerHurt(Event event, const char[] name, bool dontBroadcast){
 
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
@@ -325,7 +325,7 @@ public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcas
 /*
  * This method updates the DiedValue of a player if needed,changes his team and checks for victory
  */
-public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
+public Action Evt_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
 
 
 
@@ -349,7 +349,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 /*
  * This method resets a player's DiedYet value when he disconnects.
  */
-public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast){
+public Action Evt_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast){
 
 	int client = GetClientOfUserId(event .GetInt("userid"));
 	DiedYet[client] = 0;
@@ -366,13 +366,13 @@ public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBr
 /*
  * This functions decrements GameStarted because it will be incremented when the waiting begins
  */
-public Action Event_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
+public Action Evt_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
 	GameStarted=-1;
 }
 /*
  * This method deletes all unwanted elements from the map and balances the teams
  */
-public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast){
+public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast){
 	SuperZombies = false;
 	ServerCommand("sv_gravity 800");
 	if(RedWonHandle!=INVALID_HANDLE) {
@@ -405,7 +405,7 @@ public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 
 }
 
-public Action Event_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
+public Action Evt_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
 
 	GameStarted = 0;
 
