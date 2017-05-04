@@ -57,7 +57,7 @@ public void OnPluginStart (){
 	zve_super_zombies = CreateConVar("zve_super_zombies", "30.0", "How much time before round end zombies gain super abilities. Set to 0 to disable it.")
 	zve_tanks = CreateConVar("zve_tanks", "60.0", "How much time after setup the first zombies have a health boost. Set to 0 to disable it.")
 	AutoExecConfig(true, "plugin_zve");
-	
+
 	LoadTranslations("engiesVSmedics.phrases");
 }
 /*
@@ -76,6 +76,8 @@ public OnMapStart(){
 	ServerCommand("mp_waitingforplayers_time 35");
 	ServerCommand("mp_scrambleteams_auto 0");
 	ServerCommand("tf_weapon_criticals_melee 0");
+	ServerCommand("sm_cvar tf_dropped_weapon_lifetime 0");
+	ServerCommand("sm_cvar sv_lowedict_action 5");
 	WaitingEnded = false;
 
 
@@ -511,7 +513,6 @@ public function_DeleteDoors(){ //following code opens all doors. This part was m
 
 	function_deleteEntities("func_door",true);
 	function_deleteEntities("func_door_rotating",true);
-	function_deleteEntities("func_brush",false);
 	function_deleteEntities("func_respawnroomvisualizer",false);
 	function_sendEntitiesInput("trigger_teleport","Enable");
 
