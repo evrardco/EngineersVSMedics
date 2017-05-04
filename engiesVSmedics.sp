@@ -374,7 +374,7 @@ public Action Evt_WaitingBegins(Event event, const char[] name, bool dontBroadca
  */
 public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast){
 	SuperZombies = false;
-	ServerCommand("sm_gravity @all 800"); asd
+	ServerCommand("sm_gravity @all 800");
 	if(RedWonHandle!=INVALID_HANDLE) {
 		KillTimer(RedWonHandle,false);
 		RedWonHandle=INVALID_HANDLE;
@@ -417,7 +417,7 @@ public Action Evt_TFGameOver(Event event, const char[] name, bool dontBroadcast)
 public Action SuperZombiesTimer(Handle timer){
 	PrintToChatAll("\x05[EVZ]:\x01 %t", "power_up");
 	SuperZombies = true;
-	ServerCommand("sm_gravity @blue 500"); asd
+	ServerCommand("sm_gravity @blue 500");
 	for(int i=0; i<64; i++) {
 		if(DiedYet[i]==-1) {
 
