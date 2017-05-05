@@ -77,7 +77,7 @@ public OnMapStart(){
 	ServerCommand("mp_scrambleteams_auto 0");
 	ServerCommand("tf_weapon_criticals_melee 0");
 	ServerCommand("sm_cvar tf_dropped_weapon_lifetime 0");
-	ServerCommand("sm_cvar sv_lowedict_action 5");
+	//ServerCommand("sm_cvar sv_lowedict_action 5");
 	WaitingEnded = false;
 
 
@@ -495,15 +495,31 @@ public function_PrepareMap(){
 
 	//code below is from Perky in Hide n seek plugin, it disables cp and ctf gamemodes.
 	//following code disables cp and pl
+
+	/*SetVariantInt(0);
+	function_sendEntitiesInput("trigger_capture_area","SetTeam");
+	function_sendEntitiesInput("trigger_capture_area","Disable");
+	function_sendEntitiesInput("item_teamflag","Disable");
+	SetVariantInt(0);
+
+	function_sendEntitiesInput("team_round_timer","SetSetupTime");
+	SetVariantInt(GetConVarInt(zve_round_time)+GetConVarInt(zve_setup_time));
+	function_sendEntitiesInput("team_round_timer","SetTime");*/
 	SetVariantInt(0);
 	function_sendEntitiesInput("trigger_capture_area","SetTeam");
 	function_sendEntitiesInput("trigger_capture_area","Disable");
 	function_sendEntitiesInput("item_teamflag","Disable");
 	SetVariantInt(0);
+	/*if(FindEntityByClassname(-1,"dispenser_touch_trigger")){ //NOT STABLE YET
+		function_sendEntitiesInput("team_round_timer","SetTime");
+		function_sendEntitiesInput("team_round_timer","SetSetupTime");
+		SetVariantInt(-1);
+		function_sendEntitiesInput("team_round_timer","AddTime");
+	}
+
 	function_sendEntitiesInput("team_round_timer","SetSetupTime");
 	SetVariantInt(GetConVarInt(zve_round_time)+GetConVarInt(zve_setup_time));
-	function_sendEntitiesInput("team_round_timer","SetTime");
-
+	function_sendEntitiesInput("team_round_timer","SetTime");*/
 
 }
 /*
@@ -649,16 +665,28 @@ public void function_CheckVictory(){
 	}
 
 	bool AllEngineersDead = true;
+	bool AllMedicsDead = true;
 	for(int i=0; i<64; i++) {
 		if(DiedYet[i]==1) {
 
 			AllEngineersDead=false;
 
 		}
+		if(DiedYet[i]==-1){
+
+			AllMedicsDead=false;
+
+		}
 
 	}
 	if(AllEngineersDead) {
+
 		function_teamWin(TFTeam_Blue);
+		ZombieStarted=false;
+
+	}else if(AllMedicsDead){
+
+		function_teamWin(TFTeam_Red);
 		ZombieStarted=false;
 	}
 
