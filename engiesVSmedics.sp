@@ -3,7 +3,12 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <clients>
+#include <morecolors>
 
+
+#define LoopAlivePlayers(%1) for (int %1 = 1; %1 <= MaxClients; ++%1) if (IsClientInGame(%1) && IsPlayerAlive(%1) && !IsFakeClient(%1))
+#define TEAM_BLU 3
+#define TEAM_RED 2
 int DiedYet[64]; //this array stores wether a player is in the game and wether a player is in blue or red team
 int GameStarted=0; //this int stores the amount of time the game has been started, resets when the game ends.
 bool IsSettingTeam = false; //this bool switches to false when balancing teams so that the player death trackers doesn't messes up
@@ -36,14 +41,13 @@ public Plugin myinfo ={
 
 public void OnPluginStart (){
 	PrintToServer("Engies vs Medics V1.2 by shewowkees, inspired by Muselk.");
-	HookEvent("player_spawn",Evt_PlayerSpawnChangeClass,EventHookMode_Post);
-	HookEvent("player_spawn",Evt_PlayerSpawnChangeTeam,EventHookMode_Pre);
-	HookEvent("player_death",Evt_PlayerDeath,EventHookMode_Post);
-	HookEvent("tf_game_over",Evt_TFGameOver,EventHookMode_Post);
-	HookEvent("teamplay_round_start", Evt_RoundStart);
-	HookEvent("teamplay_waiting_begins",Evt_WaitingBegins,EventHookMode_Post);
-	HookEvent("player_disconnect",Evt_PlayerDisconnect,EventHookMode_Post);
-	HookEvent("player_hurt",Evt_PlayerHurt, EventHookMode_Pre);
+	HookEvent("player_spawn",Event_PlayerSpawnChangeClass,EventHookMode_Post);
+	HookEvent("player_spawn",Event_PlayerSpawnChangeTeam,EventHookMode_Pre);
+	HookEvent("player_death",Event_PlayerDeath,EventHookMode_Post);
+	HookEvent("tf_game_over",Event_TFGameOver,EventHookMode_Post);
+	HookEvent("teamplay_round_start", Event_RoundStart);
+	HookEvent("teamplay_waiting_begins",Event_WaitingBegins,EventHookMode_Post);
+	HookEvent("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
 	AddCommandListener(CommandListener_Build, "build");
 	AddCommandListener(CommandListener_ChangeClass, "joinclass");
 	AddCommandListener(CommandListener_ChangeTeam, "jointeam");
@@ -57,8 +61,7 @@ public void OnPluginStart (){
 	zve_super_zombies = CreateConVar("zve_super_zombies", "30.0", "How much time before round end zombies gain super abilities. Set to 0 to disable it.")
 	zve_tanks = CreateConVar("zve_tanks", "60.0", "How much time after setup the first zombies have a health boost. Set to 0 to disable it.")
 	AutoExecConfig(true, "plugin_zve");
-
-	LoadTranslations("engiesVSmedics.phrases");
+	
 }
 /*
  * This method disables respawn times and prevents teams auto balance.
@@ -75,23 +78,20 @@ public OnMapStart(){
 	ServerCommand("mp_idlemaxtime 10");
 	ServerCommand("mp_waitingforplayers_time 35");
 	ServerCommand("mp_scrambleteams_auto 0");
-	ServerCommand("tf_weapon_criticals_melee 0");
-	ServerCommand("sm_cvar tf_dropped_weapon_lifetime 0");
-	//ServerCommand("sm_cvar sv_lowedict_action 5");
 	WaitingEnded = false;
 
 
 }
 // public OnEventShutdown()
 // {
-// UnHookEvent("player_spawn",Evt_PlayerSpawnChangeClass);
-// UnHookEvent("player_spawn",Evt_PlayerSpawnChangeTeam);
-// UnHookEvent("player_death",Evt_PlayerDeath);
-// UnHookEvent("tf_game_over",Evt_TFGameOver);
-// UnHookEvent("player_regenerate",Evt_PlayerRegenerate);
-// UnHookEvent("teamplay_round_start", Evt_RoundStart);
-// UnHookEvent("teamplay_waiting_begins",Evt_WaitingBegins);
-// UnHookEvent("player_disconnect",Evt_PlayerDisconnect);
+// UnHookEvent("player_spawn",Event_PlayerSpawnChangeClass);
+// UnHookEvent("player_spawn",Event_PlayerSpawnChangeTeam);
+// UnHookEvent("player_death",Event_PlayerDeath);
+// UnHookEvent("tf_game_over",Event_TFGameOver);
+// UnHookEvent("player_regenerate",Event_PlayerRegenerate);
+// UnHookEvent("teamplay_round_start", Event_RoundStart);
+// UnHookEvent("teamplay_waiting_begins",Event_WaitingBegins);
+// UnHookEvent("player_disconnect",Event_PlayerDisconnect);
 // }
 /*
  * This method initializes DiedYet of the connecting client to the right value.
@@ -111,6 +111,16 @@ public void OnClientPostAdminCheck(int client){
 
 }
 
+int GetTeamAliveClientCount(int iTeam) {
+    int iCount;
+   
+    LoopAlivePlayers(i) {
+        if (GetClientTeam(i) == iTeam)
+            iCount++;
+    }
+   
+    return iCount;
+}
 
 
 public void TF2_OnWaitingForPlayersEnd(){
@@ -153,7 +163,7 @@ public Action CommandListener_Build(client, const String:command[], argc)
 
 	//Blocks sentry building
 	else if(iObjectType==view_as<int>(TFObject_Sentry) ) {
-		PrintToChat(client, "\x05[EVZ]:\x01 %t", "sentry_restric");
+		PrintToChat(client, "\x05[EVZ]:\x01 You can't build sentries in this gamemode !");
 		return Plugin_Handled;
 	}
 
@@ -181,7 +191,7 @@ public Action CommandListener_ChangeTeam(client, const String:command[],argc){
 		ClientCommand(client,"jointeam red");
 
 	}
-	PrintToChat(client, "\x05[EVZ]:\x01 %t", "betray_team");
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't betray your team in this gamemode !");
 	return Plugin_Handled;
 	// decl String:arg1[256]
 	// GetCmdArgString(arg1, sizeof(arg1));
@@ -211,7 +221,7 @@ public Action CommandListener_ChangeClass(client,const String:command[], argc){
 		ClientCommand(client,"joinclass engineer");
 
 	}
-	PrintToChat(client, "\x05[EVZ]:\x01 %t", "change_class");
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't change your class in this gamemode !");
 	return Plugin_Handled;
 	// decl String:arg1[256]
 	// GetCmdArgString(arg1, sizeof(arg1));
@@ -220,26 +230,26 @@ public Action CommandListener_ChangeClass(client,const String:command[], argc){
 }
 
 public Action CommandListener_Kill(client, const String:command[], argc){
-	PrintToChat(client, "\x05[EVZ]:\x01 %t", "kill_me");
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't kill yourself in this gamemode !");
 	return Plugin_Handled;
 
 }
 
 public Action CommandListener_explode(client, const String:command[], argc){
-	PrintToChat(client, "\x05[EVZ]:\x01 %t", "kill_me_explode");
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't kill yourself in this gamemode !");
 	return Plugin_Handled;
 
 }
 
 public Action CommandListener_Spectate(client, const String:command[], argc){
-	PrintToChat(client, "\x05[EVZ]:\x01 %t", "change_spectator");
+	PrintToChat(client, "\x05[EVZ]:\x01 You can't go to spectator in this gamemode !");
 	return Plugin_Handled;
 }
 
 /*
  * This method forces the spawning player to switch to the right team BEFORE he appears
  */
-public Action Evt_PlayerSpawnChangeTeam(Event event, const char[] name, bool dontBroadcast){
+public Action Event_PlayerSpawnChangeTeam(Event event, const char[] name, bool dontBroadcast){
 
 	int client = GetClientOfUserId(event .GetInt("userid"));
 	if(DiedYet[client]==-1 && TF2_GetClientTeam(client)==TFTeam_Red) { //if client is supposed to be a blue medic
@@ -257,7 +267,7 @@ public Action Evt_PlayerSpawnChangeTeam(Event event, const char[] name, bool don
 /*
  * This method forces the player to be on the right team, the right class and to use the right weapons.
  */
-public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool dontBroadcast){
+public Action Event_PlayerSpawnChangeClass(Event event, const char[] name, bool dontBroadcast){
 
 	int client = GetClientOfUserId(event .GetInt("userid"));
 	if(DiedYet[client]==0) {
@@ -273,7 +283,7 @@ public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool do
 
 
 		if( TF2_GetPlayerClass(client) != TFClass_Medic) { //if he isn't a medic, changes his class,  him and makes him respawn.
-			PrintToChat(client, "\x05[EVZ]:\x01 %t", "only_medic");
+			PrintToChat(client,"\x05[EVZ]:\x01 In zombie team, you can only be a medic !");
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
 			TF2_RegeneratePlayer(client);
 		}
@@ -286,7 +296,7 @@ public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool do
 
 
 		if( TF2_GetPlayerClass(client) != TFClass_Engineer) {        //if the client isn't an engineer, changes his class, kills him and makes him respawn
-			PrintToChat(client, "\x05[EVZ]:\x01 %t", "only_engineer");
+			PrintToChat(client,"\x05[EVZ]:\x01 In survivor team, you can only be an engineer !");
 			TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
 			DiedYet[client]=1;         //sets the diedyet value to 1 because the suicide would set it to -1
 			TF2_RegeneratePlayer(client);
@@ -296,44 +306,18 @@ public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool do
 	}
 	function_CheckVictory();
 }
-
-public Action Evt_PlayerHurt(Event event, const char[] name, bool dontBroadcast){
-
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-
-	if(DiedYet[attacker]==-1){
-
-		if(IsValidEntity(client) && IsClientInGame(client)&& WaitingEnded && ZombieStarted && !IsSettingTeam) {
-
-			int EntProp = GetEntProp(client, Prop_Send, "m_lifeState");
-			SetEntProp(client, Prop_Send, "m_lifeState", 2);
-			ChangeClientTeam(client, view_as<int>(TFTeam_Blue) );
-			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
-			SetEntProp(client, Prop_Send, "m_lifeState", EntProp);
-			TF2_RegeneratePlayer(client);
-			function_StripToMelee(client);
-			DiedYet[client]=-1;
-			function_CheckVictory();
-
-
-		}
-
-	}
-
-}
 /*
  * This method updates the DiedValue of a player if needed,changes his team and checks for victory
  */
-public Action Evt_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
-
-
+public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast){ //On player death, sets his DiedYet value to -1
+	
+	RequestFrame(NextFrame_CheckPlayerCount);
 
 	if(WaitingEnded && ZombieStarted && !IsSettingTeam) {
 
-		int client = GetClientOfUserId(event.GetInt("userid"));
+		int client = GetClientOfUserId(event .GetInt("userid"));
 		if(GameStarted>0) {
-			PrintToChat(client, "\x05[EVZ]:\x01 %t", "infected");
+			PrintToChat(client,"\x05[EVZ]:\x01 You have been infected, you can't go back to survivor team !");
 			DiedYet[client] = -1;
 			TF2_ChangeClientTeam(client,TFTeam_Blue);
 			TF2_SetPlayerClass(client, TFClass_Medic, true, true);
@@ -344,12 +328,19 @@ public Action Evt_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 	}
 }
 
+void NextFrame_CheckPlayerCount(any client)
+{
+    if (GetTeamAliveClientCount(TEAM_RED) == 1) 
+    {
+		TF2_AddCondition(client, TFCond_CritOnKill)
+    }
+}
 
 
 /*
  * This method resets a player's DiedYet value when he disconnects.
  */
-public Action Evt_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast){
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast){
 
 	int client = GetClientOfUserId(event .GetInt("userid"));
 	DiedYet[client] = 0;
@@ -366,13 +357,13 @@ public Action Evt_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 /*
  * This functions decrements GameStarted because it will be incremented when the waiting begins
  */
-public Action Evt_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
+public Action Event_WaitingBegins(Event event, const char[] name, bool dontBroadcast){
 	GameStarted=-1;
 }
 /*
  * This method deletes all unwanted elements from the map and balances the teams
  */
-public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast){
+public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast){
 	SuperZombies = false;
 	ServerCommand("sv_gravity 800");
 	if(RedWonHandle!=INVALID_HANDLE) {
@@ -396,16 +387,16 @@ public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 	CreateTimer(2.30,Stun);
 	GameStarted++;
-	PrintToChatAll("\x05[EVZ]:\x01 %t", "version");
-	PrintToChatAll("\x05[EVZ]:\x01 %t", "red_goal");
-	PrintToChatAll("\x05[EVZ]:\x01 %t", "blue_goal");
-	PrintToChatAll("\x05[EVZ]:\x01 %t", "source_plugin");
+	PrintToChatAll("\x05[EVZ]:\x01 This server runs Engineers vs Zombies V1.1");
+	PrintToChatAll("\x05[EVZ]:\x01 The goal for engineers (red team) is to survive as long as they can");
+	PrintToChatAll("\x05[EVZ]:\x01 The goal for medics (blue team) is to kill all engineers to turn them into zombies (medics) !");
+	PrintToChatAll("\x05[EVZ]:\x01 This plugin can be downloaded from www.sourcemod.net (sources included)");
 	//PrintToServer("GameStarted incremented");//Debugging instruction
 
 
 }
 
-public Action Evt_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
+public Action Event_TFGameOver(Event event, const char[] name, bool dontBroadcast){ //Once the game is over, resets the DiedYet values
 
 	GameStarted = 0;
 
@@ -415,7 +406,7 @@ public Action Evt_TFGameOver(Event event, const char[] name, bool dontBroadcast)
 
 //TIMERS
 public Action SuperZombiesTimer(Handle timer){
-	PrintToChatAll("\x05[EVZ]:\x01 %t", "power_up");
+	PrintToChatAll("\x05[EVZ]:\x01 Zombies have gained crits and higher jump height !");
 	SuperZombies = true;
 	ServerCommand("sv_gravity 500");
 	for(int i=0; i<64; i++) {
@@ -445,7 +436,7 @@ public Action Stun(Handle timer){
 public Action CountDownStart(Handle timer){
 
 	CreateTimer(1.0, CountDown, _, TIMER_REPEAT);
-	PrintToChatAll("\x05[EVZ]:\x01 %t", "infection_start");
+	PrintToChatAll("\x05[EVZ]:\x01 Infection starts in...");
 
 }
 public Action CountDown(Handle timer){
@@ -468,7 +459,7 @@ public Action CountDown(Handle timer){
 }
 
 public Action Infection(Handle timer){
-	PrintToChatAll("\x05[EVZ]:\x01 %t", "infection_unleashed");
+	PrintToChatAll("\x05[EVZ]:\x01 Zombie medics are now unleashed !");
 	ZombieStarted = true;
 	function_DeleteDoors();
 }
@@ -495,31 +486,15 @@ public function_PrepareMap(){
 
 	//code below is from Perky in Hide n seek plugin, it disables cp and ctf gamemodes.
 	//following code disables cp and pl
-
-	/*SetVariantInt(0);
-	function_sendEntitiesInput("trigger_capture_area","SetTeam");
-	function_sendEntitiesInput("trigger_capture_area","Disable");
-	function_sendEntitiesInput("item_teamflag","Disable");
-	SetVariantInt(0);
-
-	function_sendEntitiesInput("team_round_timer","SetSetupTime");
-	SetVariantInt(GetConVarInt(zve_round_time)+GetConVarInt(zve_setup_time));
-	function_sendEntitiesInput("team_round_timer","SetTime");*/
 	SetVariantInt(0);
 	function_sendEntitiesInput("trigger_capture_area","SetTeam");
 	function_sendEntitiesInput("trigger_capture_area","Disable");
 	function_sendEntitiesInput("item_teamflag","Disable");
 	SetVariantInt(0);
-	/*if(FindEntityByClassname(-1,"dispenser_touch_trigger")){ //NOT STABLE YET
-		function_sendEntitiesInput("team_round_timer","SetTime");
-		function_sendEntitiesInput("team_round_timer","SetSetupTime");
-		SetVariantInt(-1);
-		function_sendEntitiesInput("team_round_timer","AddTime");
-	}
-
 	function_sendEntitiesInput("team_round_timer","SetSetupTime");
 	SetVariantInt(GetConVarInt(zve_round_time)+GetConVarInt(zve_setup_time));
-	function_sendEntitiesInput("team_round_timer","SetTime");*/
+	function_sendEntitiesInput("team_round_timer","SetTime");
+
 
 }
 /*
@@ -529,6 +504,7 @@ public function_DeleteDoors(){ //following code opens all doors. This part was m
 
 	function_deleteEntities("func_door",true);
 	function_deleteEntities("func_door_rotating",true);
+	function_deleteEntities("func_brush",false);
 	function_deleteEntities("func_respawnroomvisualizer",false);
 	function_sendEntitiesInput("trigger_teleport","Enable");
 
@@ -665,28 +641,16 @@ public void function_CheckVictory(){
 	}
 
 	bool AllEngineersDead = true;
-	bool AllMedicsDead = true;
 	for(int i=0; i<64; i++) {
 		if(DiedYet[i]==1) {
 
 			AllEngineersDead=false;
 
 		}
-		if(DiedYet[i]==-1){
-
-			AllMedicsDead=false;
-
-		}
 
 	}
 	if(AllEngineersDead) {
-
 		function_teamWin(TFTeam_Blue);
-		ZombieStarted=false;
-
-	}else if(AllMedicsDead){
-
-		function_teamWin(TFTeam_Red);
 		ZombieStarted=false;
 	}
 
