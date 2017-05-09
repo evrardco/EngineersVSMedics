@@ -47,9 +47,7 @@ public void OnPluginStart (){
 	AddCommandListener(CommandListener_Build, "build");
 	AddCommandListener(CommandListener_ChangeClass, "joinclass");
 	AddCommandListener(CommandListener_ChangeTeam, "jointeam");
-	AddCommandListener(CommandListener_Kill, "kill");
 	AddCommandListener(CommandListener_Spectate, "spectate");
-	AddCommandListener(CommandListener_explode, "explode");
 	//CONVARS
 
 	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");
@@ -219,17 +217,6 @@ public Action CommandListener_ChangeClass(client,const String:command[], argc){
 	// return Plugin_Continue;
 }
 
-public Action CommandListener_Kill(client, const String:command[], argc){
-	PrintToChat(client, "\x05[EVZ]:\x01 %t", "kill_me");
-	return Plugin_Handled;
-
-}
-
-public Action CommandListener_explode(client, const String:command[], argc){
-	PrintToChat(client, "\x05[EVZ]:\x01 %t", "kill_me_explode");
-	return Plugin_Handled;
-
-}
 
 public Action CommandListener_Spectate(client, const String:command[], argc){
 	PrintToChat(client, "\x05[EVZ]:\x01 %t", "change_spectator");
@@ -391,7 +378,7 @@ public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 	function_PrepareMap();
 	if(WaitingEnded) {
-		function_ResetTeams(true);
+		function_AllEngineers(false);
 	}
 
 	CreateTimer(2.30,Stun);
@@ -417,7 +404,7 @@ public Action Evt_TFGameOver(Event event, const char[] name, bool dontBroadcast)
 public Action SuperZombiesTimer(Handle timer){
 	PrintToChatAll("\x05[EVZ]:\x01 %t", "power_up");
 	SuperZombies = true;
-	ServerCommand("sv_gravity 500");
+	ServerCommand("sv_gravity 400");
 	for(int i=0; i<64; i++) {
 		if(DiedYet[i]==-1) {
 
@@ -469,8 +456,10 @@ public Action CountDown(Handle timer){
 
 public Action Infection(Handle timer){
 	PrintToChatAll("\x05[EVZ]:\x01 %t", "infection_unleashed");
+
+
+	function_ResetTeams(true);
 	ZombieStarted = true;
-	function_DeleteDoors();
 }
 public Action RedWon(Handle timer){
 
@@ -520,6 +509,7 @@ public function_PrepareMap(){
 	function_sendEntitiesInput("team_round_timer","SetSetupTime");
 	SetVariantInt(GetConVarInt(zve_round_time)+GetConVarInt(zve_setup_time));
 	function_sendEntitiesInput("team_round_timer","SetTime");*/
+	function_DeleteDoors();
 
 }
 /*
@@ -581,7 +571,6 @@ public void function_teamWin(TFTeam team) //code from hide n seek
 public void function_ResetTeams(bool kills){
 
 	IsSettingTeam=true;
-	function_AllEngineers(false);
 	//following code counts the connected players
 	int PlayerCount=0;
 	for(int i=0; i<64; i++) {
@@ -634,8 +623,15 @@ public void function_ResetTeams(bool kills){
 			if(DiedYet[i]==-1) {
 
 				if(IsClientInGame(i)) {
-					function_SafeTeamChange(i,TFTeam_Blue);
-					TF2_RespawnPlayer(i);
+					int EntProp = GetEntProp(i, Prop_Send, "m_lifeState");
+					SetEntProp(i, Prop_Send, "m_lifeState", 2);
+					ChangeClientTeam(i, view_as<int>(TFTeam_Blue) );
+					TF2_SetPlayerClass(i, TFClass_Medic, true, true);
+					SetEntProp(i, Prop_Send, "m_lifeState", EntProp);
+					TF2_RegeneratePlayer(i);
+					function_StripToMelee(i);
+					DiedYet[i]=-1;
+					function_CheckVictory();
 
 				}
 
@@ -684,7 +680,7 @@ public void function_CheckVictory(){
 		function_teamWin(TFTeam_Blue);
 		ZombieStarted=false;
 
-	}else if(AllMedicsDead){
+	}else if(AllMedicsDead && ZombieStarted){
 
 		function_teamWin(TFTeam_Red);
 		ZombieStarted=false;
