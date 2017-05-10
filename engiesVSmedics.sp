@@ -4,6 +4,7 @@
 #include <tf2_stocks>
 #include <clients>
 #include <morecolors>
+#include <adminmenu>
 
 
 #define LoopAlivePlayers(%1) for (int %1 = 1; %1 <= MaxClients; ++%1) if (IsClientInGame(%1) && IsPlayerAlive(%1) && !IsFakeClient(%1))
@@ -20,6 +21,16 @@ ConVar zve_super_zombies = null;
 bool WaitingEnded = false;
 Handle RedWonHandle = INVALID_HANDLE;
 Handle SuperZombiesTimerHandle = INVALID_HANDLE;
+// Glow Plugin from ReflexPoision starts here
+Handle cvarEnabled;
+Handle cvarRemember;
+Handle Version;
+Handle hAdminMenu;
+Handle cvarLogs;
+Handle cvarAnnounce;
+
+
+bool isOutlined[MAXPLAYERS + 1] = { false, ... };
 int CountDownCounter = 0;
 bool SuperZombies = false;
 /* HOW THIS PLUGIN WORKS:
@@ -43,9 +54,11 @@ public Plugin myinfo ={
 
 public void OnPluginStart (){
 	PrintToServer("Engies vs Medics V1.2 by shewowkees, inspired by Muselk.");
-	CreateConVar("sm_force_end_round_version", PLUGIN_VERSION, "k", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	CreateConVar("sm_force_end_round_version", PLUGIN_VERSION, "k", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 	RegAdminCmd("sm_zsfer", ForceGameEnd, ADMFLAG_BAN, "sm_zsfer [team]");
 	RegAdminCmd("sm_zsforceendround", ForceGameEnd, ADMFLAG_BAN, "sm_zsforceendround [team]");
+	// ReflexPoision outline code
+	RegAdminCmd("sm_zve_outline", OutlineCmd, 0, "sm_zve_outline <#userid|name> <1/0> - Toggles outline on player(s)");
 	LoadTranslations("common.phrases");
 	HookEvent("player_spawn",Event_PlayerSpawnChangeClass,EventHookMode_Post);
 	HookEvent("player_spawn",Event_PlayerSpawnChangeTeam,EventHookMode_Pre);
@@ -54,23 +67,38 @@ public void OnPluginStart (){
 	HookEvent("teamplay_round_start", Event_RoundStart);
 	HookEvent("teamplay_waiting_begins",Event_WaitingBegins,EventHookMode_Post);
 	HookEvent("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
+	HookEvent("player_spawn", OnPlayerSpawn);
 	AddCommandListener(CommandListener_Build, "build");
 	AddCommandListener(CommandListener_ChangeClass, "joinclass");
 	AddCommandListener(CommandListener_ChangeTeam, "jointeam");
 	AddCommandListener(CommandListener_Kill, "kill");
 	AddCommandListener(CommandListener_Spectate, "spectate");
 	AddCommandListener(CommandListener_explode, "explode");
+	// Glow Plugin from ReflexPoision starts here
+	Handle topmenu;
+    if(LibraryExists("adminmenu") && ((topmenu = GetAdminTopMenu()) != INVALID_HANDLE))
+    {
+        OnAdminMenuReady(topmenu);
+    }
 	//CONVARS
-
+	//ReflexPoison Glow Plugin Cvars start here
+    cvarEnabled = CreateConVar("sm_zve_outline_enabled", "1", "Enable Player Outline\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
+    cvarRemember = CreateConVar("sm_zve_outline_remember", "0", "Enable re-toggles of outlines on spawn\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
+    cvarLogs = CreateConVar("sm_zve_outline_logs", "1", "Enable logs of outline toggles\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
+    cvarAnnounce = CreateConVar("sm_zve_outline_announce", "1", "Enable announcements of outline toggles\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
+    //ReflexPoison Glow Plugin Cvars ends here
 	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");
 	zve_setup_time = CreateConVar("zve_setup_time", "45.0", "Setup time, 30s by default.");
 	zve_super_zombies = CreateConVar("zve_super_zombies", "30.0", "How much time before round end zombies gain super abilities. Set to 0 to disable it.")
 	zve_tanks = CreateConVar("zve_tanks", "60.0", "How much time after setup the first zombies have a health boost. Set to 0 to disable it.")
 	AutoExecConfig(true, "plugin_zve");
+	AutoExecConfig(true, "plugin.zve_playeroutline");
+	HookConVarChange(Version, CVarChange);
+	LoadTranslations("common.phrases");
 	
 }
 
-public Action:ForceGameEnd(client, args)
+public Action ForceGameEnd(client, args)
 {
 	if (args != 0 && args != 1)
 	{
@@ -389,12 +417,14 @@ void NextFrame_CheckPlayerCount(any client)
 {
     if (GetTeamAliveClientCount(TEAM_RED) == 1)
     {
-		TF2_AddCondition(client, TFCond_Kritzkrieged);
+		TF2_AddCondition(client, TFCond_CritCola);
+		ServerCommand("sm_zvs_outline @red 1");
     }
 	else if (GetTeamAliveClientCount(TEAM_RED) == 0)
 	{
 		ServerCommand("sm_zsfer blue");
-		TF2_RemoveCondition(client, TFCond_Kritzkrieged);
+		TF2_RemoveCondition(client, TFCond_CritCola);
+		ServerCommand("sm_zvs_outline @red 0");
 	}
 }
 
@@ -856,3 +886,292 @@ public int function_countPlayers(){
 	}
 	return count;
 }
+
+// ReflexPoison Most of Outline Player Code Starts here
+public CVarChange(Handle:convar, const String:oldValue[], const String:newValue[])
+{
+    if(convar == cvarEnabled && !GetConVarBool(cvarEnabled))
+    {
+        for(new i = 1; i <= MaxClients; i++)
+        {
+            isOutlined[i] = false;
+            SetEntProp(i, Prop_Send, "m_bGlowEnabled", 0);
+        }
+    }
+    if(convar == Version)
+    {
+        SetConVarString(Version, PLUGIN_VERSION);
+    }
+}
+
+public OnClientPutInServer(client)
+{
+    isOutlined[client] = false;
+}
+
+public Action OutlineCmd(client, args)
+{
+    if(!GetConVarBool(cvarEnabled))
+    {
+        return Plugin_Continue;
+    }
+    if(args == 0)
+    {
+        if(client == 0)
+        {
+            PrintToServer("Usage: sm_zve_outline <#userid|name> <1/0>");
+            return Plugin_Handled;
+        }
+        else if(!isOutlined[client])
+        {
+            Outline(client, true);
+            if(GetConVarBool(cvarLogs))
+            {
+                LogAction(client, client, "\"%L\" added player outline on \"%L\"", client, client);
+            }
+            return Plugin_Handled;
+        }
+        else if(isOutlined[client])
+        {
+            Outline(client, false);
+            if(GetConVarBool(cvarLogs))
+            {
+                LogAction(client, client, "\"%L\" removed player outline from \"%L\"", client, client);
+            }
+            return Plugin_Handled;
+        }
+    }
+    if(args == 1)
+    {
+        if(!CheckCommandAccess(client, "sm_zve_outline_target", ADMFLAG_GENERIC))
+        {
+            ReplyToCommand(client, "[SM] %t.", "No Access");
+            return Plugin_Handled;
+        }
+        ReplyToCommand(client, "[SM] Usage: sm_zve_outline <#userid|name> <1/0>");
+        return Plugin_Handled;
+    }
+    if(args == 2)
+    {
+        if(!CheckCommandAccess(client, "sm_zve_outline_target", ADMFLAG_GENERIC))
+        {
+            ReplyToCommand(client, "[SM] %t.", "No Access");
+            return Plugin_Handled;
+        }
+        new String:arg1[64];
+        new String:arg2[64];
+        GetCmdArg(1, arg1, sizeof(arg1));
+        GetCmdArg(2, arg2, sizeof(arg2));
+        new toggle = StringToInt(arg2);
+        if(toggle == 0 && !StrEqual(arg2, "0"))
+        {
+            toggle = -1;
+        }
+        new String:target_name[MAX_TARGET_LENGTH];
+        new target_list[MAXPLAYERS];
+        new target_count;
+        new bool:tn_is_ml;
+        if((target_count = ProcessTargetString(
+                        arg1,
+                        client,
+                        target_list,
+                        MAXPLAYERS,
+                        COMMAND_FILTER_ALIVE,
+                        target_name,
+                        sizeof(target_name),
+                        tn_is_ml)) <= 0)
+        {
+            ReplyToTargetError(client, target_count);
+            return Plugin_Handled;
+        }
+        if(toggle != 0 && toggle != 1)
+        {
+            ReplyToCommand(client, "[SM] Usage: sm_zve_outline <#userid|name> <1/0>");
+            return Plugin_Handled;
+        }
+        if(toggle == 1)
+        {
+            ShowActivity2(client, "[SM] ", "Added outline on %s.", target_name);
+            for(new i = 0; i < target_count; i++)
+            {
+                if(IsValidClient(target_list[i]) && !isOutlined[target_list[i]])
+                {
+                    Outline(target_list[i], true);
+                    if(GetConVarBool(cvarLogs))
+                    {
+                        LogAction(client, target_list[i], "\"%L\" added player outline on \"%L\"", client, target_list[i]);
+                    }
+                }
+            }
+        }
+        if(toggle == 0)
+        {
+            ShowActivity2(client, "[SM] ", "Removed outline from %s.", target_name);
+            for(new i = 0; i < target_count; i++)
+            {
+                if(IsValidClient(target_list[i]) && isOutlined[target_list[i]])
+                {
+                    Outline(target_list[i], false);
+                    if(GetConVarBool(cvarLogs))
+                    {
+                        LogAction(client, target_list[i], "\"%L\" removed player outline from \"%L\"", client, target_list[i]);
+                    }
+                }
+            }
+        }
+    }
+    return Plugin_Handled;
+}
+
+public OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+{
+    new client = GetClientOfUserId(GetEventInt(event, "userid"));
+    if(isOutlined[client] && GetConVarBool(cvarEnabled) && GetConVarBool(cvarRemember))
+    {
+        SetEntProp(client, Prop_Send, "m_bGlowEnabled", 1);
+    }
+    else
+    {
+        isOutlined[client] = false;
+    }
+}
+
+public OnLibraryRemoved(const String:name[])
+{
+    if(StrEqual(name, "adminmenu"))
+    {
+        hAdminMenu = INVALID_HANDLE;
+    }
+}
+
+public OnAdminMenuReady(Handle:topmenu)
+{
+    if(topmenu == hAdminMenu)
+    {
+        return;
+    }
+    hAdminMenu = topmenu;
+    new TopMenuObject:player_commands = FindTopMenuCategory(hAdminMenu, ADMINMENU_PLAYERCOMMANDS);
+    if(player_commands != INVALID_TOPMENUOBJECT)
+    {
+        AddToTopMenu(hAdminMenu, "sm_zve_outline", TopMenuObject_Item, AdminMenu_Outline, player_commands, "sm_zve_outline_target", ADMFLAG_GENERIC);
+    }
+}
+
+public AdminMenu_Outline( Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id, param, String:buffer[], maxlength )
+{
+    if(action == TopMenuAction_DisplayOption)
+    {
+        Format(buffer, maxlength, "Outline player");
+    }
+    else if(action == TopMenuAction_SelectOption)
+    {
+        DisplayOutlineMenu(param);
+    }
+}
+
+public DisplayOutlineMenu(client)
+{
+    new Handle:menu = CreateMenu(MenuHandler_Outline);
+    decl String:title[100];
+    Format(title, sizeof(title), "Outline Player:");
+    SetMenuTitle(menu, title);
+    SetMenuExitBackButton(menu, true);
+    AddTargetsToMenu(menu, client, true, true);
+    DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
+public MenuHandler_Outline(Handle:menu, MenuAction:action, param1, param2)
+{
+    if(action == MenuAction_End)
+    {
+        CloseHandle(menu);
+    }
+    else if(action == MenuAction_Cancel)
+    {
+        if(param2 == MenuCancel_ExitBack && hAdminMenu != INVALID_HANDLE)
+        {
+            DisplayTopMenu(hAdminMenu, param1, TopMenuPosition_LastCategory);
+        }
+    }
+    else if(action == MenuAction_Select)
+    {
+        decl String:info[32];
+        new userid;
+        new target;
+        GetMenuItem(menu, param2, info, sizeof(info));
+        userid = StringToInt(info);
+        if((target = GetClientOfUserId(userid)) == 0)
+        {
+            PrintToChat(param1, "[SM] %s", "Player no longer available.");
+        }
+        else if(!CanUserTarget(param1, target))
+        {
+            PrintToChat(param1, "[SM] %s", "Unable to target player.");
+        }
+        else if(IsValidClient(target))
+        {
+            if(!isOutlined[target])
+            {
+                Outline(target, true);
+                ShowActivity2(param1, "[SM] ","Added outline on %N.", target);
+                if(GetConVarBool(cvarLogs))
+                {
+                    LogAction(param1, target, "\"%L\" added player outline on \"%L\"", param1, target);
+                }
+            }
+            else if(isOutlined[target])
+            {
+                Outline(target, false);
+                ShowActivity2(param1, "[SM] ","Removed outline from %N.", target);
+                if(GetConVarBool(cvarLogs))
+                {
+                    LogAction(param1, target, "\"%L\" removed player outline from \"%L\"", param1, target);
+                }
+            }
+        }
+        if(IsValidClient(param1) && !IsClientInKickQueue(param1))
+        {
+            DisplayOutlineMenu(param1);
+        }
+    }
+}
+ 
+stock Outline(client, bool:add = true)
+{
+    if(add)
+    {
+        SetEntProp(client, Prop_Send, "m_bGlowEnabled", 1);
+        if(GetConVarBool(cvarAnnounce))
+        {
+            PrintToChat(client, "[SM] Player outline enabled.");
+        }
+        isOutlined[client] = true;
+    }
+    else
+    {
+        SetEntProp(client, Prop_Send, "m_bGlowEnabled", 0);
+        if(GetConVarBool(cvarAnnounce))
+        {
+            PrintToChat(client, "[SM] Player outline disabled.");
+        }
+        isOutlined[client] = false;
+    }
+}
+ 
+stock IsValidClient(client, bool:replaycheck = true)
+{
+    if(client <= 0 || client > MaxClients || !IsClientInGame(client) || GetEntProp(client, Prop_Send, "m_bIsCoaching"))
+    {
+        return false;
+    }
+    if(replaycheck)
+    {
+        if(IsClientSourceTV(client) || IsClientReplay(client))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+// ReflexPoison Most of Outline Player Code Ends here
