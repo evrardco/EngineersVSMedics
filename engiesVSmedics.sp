@@ -30,6 +30,8 @@ bool SuperZombies = false;
  *      if a player has its DiedYet value set to 1, it will spawn as a red engineer.
  *	Any sentry will instantly be destroyed and blue medics can only use melee weapons.
  */
+ 
+ new const String:PLUGIN_VERSION[] = "1.0.1";
 
 public Plugin myinfo ={
 	name = "Engineers Vs Zombies",
@@ -41,6 +43,10 @@ public Plugin myinfo ={
 
 public void OnPluginStart (){
 	PrintToServer("Engies vs Medics V1.2 by shewowkees, inspired by Muselk.");
+	CreateConVar("sm_force_end_round_version", PLUGIN_VERSION, "k", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	RegAdminCmd("sm_zsfer", ForceGameEnd, ADMFLAG_BAN, "sm_zsfer [team]");
+	RegAdminCmd("sm_zsforceendround", ForceGameEnd, ADMFLAG_BAN, "sm_zsforceendround [team]");
+	LoadTranslations("common.phrases");
 	HookEvent("player_spawn",Event_PlayerSpawnChangeClass,EventHookMode_Post);
 	HookEvent("player_spawn",Event_PlayerSpawnChangeTeam,EventHookMode_Pre);
 	HookEvent("player_death",Event_PlayerDeath,EventHookMode_Post);
@@ -63,6 +69,57 @@ public void OnPluginStart (){
 	AutoExecConfig(true, "plugin_zve");
 	
 }
+
+public Action:ForceGameEnd(client, args)
+{
+	if (args != 0 && args != 1)
+	{
+		ReplyToCommand(client, "sm_zsfer / sm_zsforceendround [Winning Team: Red/Blue/None]");
+		return Plugin_Handled;
+	}
+	
+	new iEnt = -1;
+	iEnt = FindEntityByClassname(iEnt, "game_round_win");
+	
+	if (iEnt < 1)
+	{
+		iEnt = CreateEntityByName("game_round_win");
+		if (IsValidEntity(iEnt))
+			DispatchSpawn(iEnt);
+		else
+		{
+			ReplyToCommand(client, "Unable to find or create a game_round_win entity!");
+			return Plugin_Handled;
+		}
+	}
+	
+	new iWinningTeam = 0;
+	if (client) 
+		iWinningTeam = GetClientTeam(client);
+	
+	if (args == 1)
+	{
+		decl String:buffer[32];
+		GetCmdArg(1, buffer, sizeof(buffer));
+	
+		if (StrEqual(buffer, "blue", false))
+			iWinningTeam = 3;
+		else if (StrEqual(buffer, "red", false))
+			iWinningTeam = 2;
+		else if (StrEqual(buffer, "none", false))
+			iWinningTeam = 0;
+	}
+	
+	if (iWinningTeam == 1)
+		iWinningTeam --;
+		
+	SetVariantInt(iWinningTeam);
+	AcceptEntityInput(iEnt, "SetTeam");
+	AcceptEntityInput(iEnt, "RoundWin");
+	
+	return Plugin_Handled;
+}
+
 /*
  * This method disables respawn times and prevents teams auto balance.
  * It also makes the server ban the idle players immediatly, only switching
@@ -330,10 +387,15 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 
 void NextFrame_CheckPlayerCount(any client)
 {
-    if (GetTeamAliveClientCount(TEAM_RED) == 1) 
+    if (GetTeamAliveClientCount(TEAM_RED) == 1)
     {
-		TF2_AddCondition(client, TFCond_CritOnKill)
+		TF2_AddCondition(client, TFCond_Kritzkrieged);
     }
+	else if (GetTeamAliveClientCount(TEAM_RED) == 0)
+	{
+		ServerCommand("sm_zsfer blue");
+		TF2_RemoveCondition(client, TFCond_Kritzkrieged);
+	}
 }
 
 
@@ -466,6 +528,7 @@ public Action Infection(Handle timer){
 public Action RedWon(Handle timer){
 
 	function_teamWin(TFTeam_Red);
+	ServerCommand("sm_zsfer red");	
 	RedWonHandle=INVALID_HANDLE;
 
 }
