@@ -76,19 +76,18 @@ public void OnPluginStart (){
 	AddCommandListener(CommandListener_explode, "explode");
 	// Glow Plugin from ReflexPoision starts here
 	Handle topmenu;
-    if(LibraryExists("adminmenu") && ((topmenu = GetAdminTopMenu()) != INVALID_HANDLE))
+	if(LibraryExists("adminmenu") && ((topmenu = GetAdminTopMenu()) != INVALID_HANDLE))
     {
         OnAdminMenuReady(topmenu);
     }
 	//CONVARS
 	//ReflexPoison Glow Plugin Cvars start here
-    cvarEnabled = CreateConVar("sm_zve_outline_enabled", "1", "Enable Player Outline\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
-    cvarRemember = CreateConVar("sm_zve_outline_remember", "0", "Enable re-toggles of outlines on spawn\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
-    cvarLogs = CreateConVar("sm_zve_outline_logs", "1", "Enable logs of outline toggles\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
-    cvarAnnounce = CreateConVar("sm_zve_outline_announce", "1", "Enable announcements of outline toggles\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
+	cvarEnabled = CreateConVar("sm_zve_outline_enabled", "1", "Enable Player Outline\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
+	cvarRemember = CreateConVar("sm_zve_outline_remember", "0", "Enable re-toggles of outlines on spawn\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
+	cvarLogs = CreateConVar("sm_zve_outline_logs", "1", "Enable logs of outline toggles\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
+	cvarAnnounce = CreateConVar("sm_zve_outline_announce", "1", "Enable announcements of outline toggles\n0 = Disabled\n1 = Enabled", _, true, 0.0, true, 1.0);
     //ReflexPoison Glow Plugin Cvars ends here
-	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");
-	zve_setup_time = CreateConVar("zve_setup_time", "45.0", "Setup time, 30s by default.");
+	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");		zve_setup_time = CreateConVar("zve_setup_time", "45.0", "Setup time, 30s by default.");
 	zve_super_zombies = CreateConVar("zve_super_zombies", "30.0", "How much time before round end zombies gain super abilities. Set to 0 to disable it.")
 	zve_tanks = CreateConVar("zve_tanks", "60.0", "How much time after setup the first zombies have a health boost. Set to 0 to disable it.")
 	AutoExecConfig(true, "plugin_zve");
