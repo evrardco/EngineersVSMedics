@@ -92,7 +92,6 @@ public void OnPluginStart (){
 	zve_tanks = CreateConVar("zve_tanks", "60.0", "How much time after setup the first zombies have a health boost. Set to 0 to disable it.")
 	AutoExecConfig(true, "plugin_zve");
 	AutoExecConfig(true, "plugin.zve_playeroutline");
-	HookConVarChange(Version, CVarChange);
 	LoadTranslations("common.phrases");
 	
 }
