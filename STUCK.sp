@@ -17,76 +17,34 @@ public Plugin myinfo ={
 
 public void OnPluginStart (){
 	RegConsoleCmd("sm_stuck", stuckCommand);
-	RegAdminCmd("sm_nextlevel", nextCommand, ADMFLAG_CHANGEMAP, "sm_nextlevel - triggers the level change");
-	RegAdminCmd("sm_playerinfo", playerinfoCommand, ADMFLAG_CHANGEMAP, "sm_playerinfo Display player datamaps values");
+
 
 
 
 }
+public Action stuckCommand(int client, int args){
 
 	int CollisionGroup = GetEntProp(client, Prop_Data, "m_CollisionGroup");
 
 	SetEntProp(client, Prop_Data, "m_CollisionGroup", 2);
-	CreateTimer(3.0, reCollide, client, CollisionGroup);
+	CreateTimer(3.0, reCollide, client);
 	PrintToChat(client, "[WARNING] You now have 3 seconds to move !");
 	/*CommandCount[client]--;*/
 	return Plugin_Handled;
 
 
 }
-public Action nextCommand(int client, int args){
-
-	ServerCommand("changelevel_next");
-
-
-}
-public Action playerinfoCommand(int client, int args){
-
-	if (args < 2)
-		{
-			return Plugin_Handled;
-		}
-
-		char name[32];
-	        int target = -1;
-		GetCmdArg(1, name, sizeof(name));
-
-		for (int i=1; i<=MaxClients; i++)
-		{
-			if (!IsClientConnected(i))
-			{
-				continue;
-			}
-			char other[32];
-			GetClientName(i, other, sizeof(other));
-			if (StrEqual(name, other))
-			{
-				target = i;
-			}
-		}
-
-		if (target == -1)
-		{
-			PrintToConsole(client, "Could not find any player with the name: \"%s\"", name);
-			return Plugin_Handled;
-		}
-
-		char prop[64];
-		GetCmdArg(2, prop, sizeof(prop));
-		int result = GetEntProp(target, Prop_Send, prop);
-		char str[32];
-		IntToString(result, str, sizeof(str));
-		PrintToChatAll(str);
-
-
-}
 
 
 
 
-public Action reCollide(Handle timer, any client, any CollisionGroup){
+public Action reCollide(Handle timer, any client){
+	if(TF2_GetClientTeam(client)==TFTeam_Red){
+		SetEntProp(client, Prop_Data, "m_CollisionGroup", 3);
 
-	SetEntProp(client, Prop_Data, "m_CollisionGroup", CollisionGroup);
+	}else if(TF2_GetClientTeam(client)==TFTeam_Blue){
+		SetEntProp(client, Prop_Data, "m_CollisionGroup", 5);
+	}
+
 	PrintToChat(client, "[WARNING] You are now solid again.");
-
 }

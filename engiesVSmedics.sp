@@ -117,7 +117,7 @@ public Action CommandListener_Build(client, const String:command[], argc)
 
 	//Blocks sentry building
 	else if(iObjectType==view_as<int>(TFObject_Sentry) ) {
-		Client_PrintToChat(client,false, "{O}[EVZ]: %t", "sentry_restric");
+		Client_PrintToChat(client,false, "{BLA}[EVZ]:{N} %t", "sentry_restric");
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
@@ -128,7 +128,7 @@ public Action CommandListener_Build(client, const String:command[], argc)
 
 public Action CommandListener_ChangeTeam(client, const String:command[],argc){
 
-	(client, "{O}[EVZ]: %t", "betray_team");
+	(client, "{BLA}[EVZ]:{N} %t", "betray_team");
 	return Plugin_Handled;
 
 }
@@ -156,14 +156,14 @@ public Action CommandListener_ChangeClass(client,const String:command[], argc){
 
 	}
 
-	Client_PrintToChat(client,false, "{O}[EVZ]: %t", "change_class");
+	Client_PrintToChat(client,false, "{BLA}[EVZ]:{N} %t", "change_class");
 	return Plugin_Handled;
 
 }
 
 
 public Action CommandListener_Spectate(client, const String:command[], argc){
-	Client_PrintToChat(client, false,"{O}[EVZ]: %t", "change_spectator");
+	Client_PrintToChat(client, false,"{BLA}[EVZ]:{N} %t", "change_spectator");
 	return Plugin_Handled;
 }
 
@@ -254,7 +254,7 @@ public Action Evt_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 	if(WaitingEnded && InfectionStarted) {
 
 		int client = GetClientOfUserId(event.GetInt("userid"));
-		Client_PrintToChat(client, false,"{O}[EVZ]: %t", "infected");
+		Client_PrintToChat(client, false,"{BLA}[EVZ]:{N} %t", "infected");
 		TF2_ChangeClientTeam(client,TFTeam_Blue);
 		TF2_SetPlayerClass(client, TFClass_Medic, true, true);
 		function_CheckVictory();
@@ -318,10 +318,10 @@ public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 
 
-	Client_PrintToChatAll(false,"{O}[EVZ]: %t", "version");
-	Client_PrintToChatAll(false,"{O}[EVZ]: %t", "red_goal");
-	Client_PrintToChatAll(false,"{O}[EVZ]: %t", "blue_goal");
-	Client_PrintToChatAll(false,"{O}[EVZ]: %t", "source_plugin");
+	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "version");
+	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "red_goal");
+	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "blue_goal");
+	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "source_plugin");
 	//PrintToServer("GameStarted incremented");//Debugging instruction
 
 
@@ -347,12 +347,12 @@ public Action WarnInfected(Handle timer, any client){
 public Action CountDownStart(Handle timer){
 
 	CountDownHandle = CreateTimer(1.0, CountDown, _, TIMER_REPEAT);
-	Client_PrintToChatAll(false,"{O}[EVZ]: %t", "infection_start");
+	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "infection_start");
 	CountDownStartHandle = INVALID_HANDLE;
 }
 
 public Action SuperZombiesTimer(Handle timer){
-	Client_PrintToChatAll(false,"{O}[EVZ]: %t", "power_up");
+	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "power_up");
 	SuperZombies = true;
 	ServerCommand("sv_gravity 400");
 	//Loop from smlib
@@ -381,7 +381,7 @@ public Action SuperZombiesTimer(Handle timer){
 public Action CountDown(Handle timer){
 	if(CountDownCounter<10) {
 
-		char message[] = "{O}[EVZ]: ";
+		char message[] = "{R}[EVZ]:{N} ";
 		char timeLeft[3];
 		IntToString(10-CountDownCounter, timeLeft, 3);
 		StrCat(message, sizeof(message)+3,timeLeft);
@@ -404,7 +404,7 @@ public Action CountDown(Handle timer){
 public Action Infection(Handle timer){
 	function_SelectFirstZombies();
 
-	Client_PrintToChatAll(false,"{O}[EVZ]: %t", "infection_unleashed");
+	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "infection_unleashed");
 	ServerCommand("sm_cvar tf_boost_drain_time 9999");
 	CreateTimer(5.0,InfectionStartedChanger);
 	InfectionHandle = INVALID_HANDLE;
