@@ -417,7 +417,6 @@ public Action InfectionStartedChanger(Handle timer){
 }
 
 public Action RedWon(Handle timer){
-
 	function_teamWin(TFTeam_Red)
 	RedWonHandle=INVALID_HANDLE;
 
@@ -558,13 +557,11 @@ public void function_CheckVictory(){
 	if(InfectionStarted){
 
 		if(AllMedicsDead){
-			InfectionStarted=false;
 			function_teamWin(TFTeam_Red);
 			return;
 		}
 
 		if(AllEngineersDead){
-			InfectionStarted=false;
 			function_teamWin(TFTeam_Blue);
 
 		}
@@ -669,6 +666,7 @@ public void Explode(float flPos[3], float flDamage, float flRadius, const char[]
 }
 public void function_teamWin(TFTeam team) //code from hide n seek
 {
+	InfectionStarted = false;
 	//this is the code that actually makes a team win
 	int edict_index = FindEntityByClassname(-1, "team_control_point_master");
 	if (edict_index == -1)
