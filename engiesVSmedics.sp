@@ -224,13 +224,15 @@ public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname
 
 public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
 {
-		if(attacker==0 || victim==0){
+		if(!Client_IsValid(victim)||!Client_IsValid(attacker)){
 			return Plugin_Continue;
 		}
 		if(TF2_GetClientTeam(victim)==TFTeam_Red && TF2_GetClientTeam(attacker)==TFTeam_Blue){//that number is the one of the melee medic weapon
 			if(damagetype==134221952){
 
 				if(damage>Entity_GetHealth(victim)){
+					SetEntProp(attacker, Prop_Data, "m_CollisionGroup",3);
+					CreateTimer(3.5,reCollide,attacker);
 					function_makeZombie(victim);
 					Client_SetScore(attacker,Client_GetScore(attacker)+1);
 					function_CheckVictory();
@@ -331,6 +333,8 @@ public Action reCollide(Handle timer, any client){
 
 	if(TF2_GetClientTeam(client)==TFTeam_Red){
 		SetEntProp(client, Prop_Data, "m_CollisionGroup",3);
+	}else if(TF2_GetClientTeam(client)==TFTeam_Blue){
+		SetEntProp(client, Prop_Data, "m_CollisionGroup", 5);
 	}
 
 
@@ -642,7 +646,7 @@ public void function_makeZombie(int client){
 
 	SetEntProp(client, Prop_Send, "m_iHealth", ZombieHealth);
 	SetEntProp(client, Prop_Data, "m_iHealth", ZombieHealth);
-	SetEntProp(client, Prop_Data, "m_CollisionGroup", 5);
+	CreateTimer(3.5,reCollide,client);
 
 	float clientPos[3];
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", clientPos);
