@@ -30,9 +30,6 @@ Handle InfectionHandle = INVALID_HANDLE;
 Handle CountDownHandle = INVALID_HANDLE;
 Handle CountDownStartHandle = INVALID_HANDLE;
 
-
-
-
 public Plugin myinfo ={
 	name = "Engineers Vs Zombies rewrote",
 	author = "shewowkees",
@@ -73,6 +70,7 @@ public OnMapStart(){
 	ServerCommand("tf_weapon_criticals_melee 0");
 	ServerCommand("sm_cvar tf_avoidteammates 0");
 	PrecacheSound("vo/medic_medic03.mp3");
+	PrecacheSound("vo/medic_no01.mp3");
 }
 
 public void OnClientPostAdminCheck(int client){
@@ -269,8 +267,6 @@ public Action Evt_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	function_CheckVictory();
 }
 
-
-
 public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast){
 	function_AllEngineers();
 	SuperZombies = false;
@@ -317,36 +313,28 @@ public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 	function_PrepareMap();
 
-
-
-
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "version");
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "red_goal");
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "blue_goal");
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "source_plugin");
-	//PrintToServer("GameStarted incremented");//Debugging instruction
-
 
 }
 //TIMERS
 public Action reCollide(Handle timer, any client){
 
-	if(TF2_GetClientTeam(client)==TFTeam_Red){
-		SetEntProp(client, Prop_Data, "m_CollisionGroup",3);
-	}else if(TF2_GetClientTeam(client)==TFTeam_Blue){
-		SetEntProp(client, Prop_Data, "m_CollisionGroup", 5);
+	if(Client_IsIngame(client) && Client_IsValid(client)){
+
+		if(TF2_GetClientTeam(client)==TFTeam_Red){
+			SetEntProp(client, Prop_Data, "m_CollisionGroup",3);
+		}else if(TF2_GetClientTeam(client)==TFTeam_Blue){
+			SetEntProp(client, Prop_Data, "m_CollisionGroup", 5);
+		}
+
 	}
 
 
 
 }
-
-public Action WarnInfected(Handle timer, any client){
-
-	function_makeZombie(client);
-
-}
-
 
 public Action CountDownStart(Handle timer){
 
@@ -409,16 +397,12 @@ public Action Infection(Handle timer){
 	function_SelectFirstZombies();
 
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "infection_unleashed");
-	ServerCommand("sm_cvar tf_boost_drain_time 9999");
-	CreateTimer(5.0,InfectionStartedChanger);
+	ServerCommand("sm_cvar tf_boost_drain_time 999");
+	InfectionStarted = true;
 	InfectionHandle = INVALID_HANDLE;
 
 }
 
-public Action InfectionStartedChanger(Handle timer){
-		InfectionStarted = true;
-
-}
 
 public Action RedWon(Handle timer){
 	function_teamWin(TFTeam_Red)
