@@ -15,9 +15,9 @@ ConVar zve_round_time = null;
 ConVar zve_tanks = null;
 ConVar zve_super_zombies = null;
 //Game related global variables
-bool WaitingEnded = false;
 bool InfectionStarted = false;
 bool SuperZombies = false;
+bool EmptyServer = true;
 int ZombieHealth = 1500;
 int CountDownCounter = 0;
 float ActualRoundTime = 0.0;
@@ -52,7 +52,7 @@ public void OnPluginStart (){
 	//CONVARS
 
 	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");
-	zve_setup_time = CreateConVar("zve_setup_time", "45.0", "Setup time, 30s by default.");
+	zve_setup_time = CreateConVar("zve_setup_time", "60.0", "Setup time, 60s by default.");
 	zve_super_zombies = CreateConVar("zve_super_zombies", "30.0", "How much time before round end zombies gain super abilities. Set to 0 to disable it.")
 	zve_tanks = CreateConVar("zve_tanks", "60.0", "How much time after setup the first zombies have a health boost. Set to 0 to disable it.")
 	AutoExecConfig(true, "plugin_zve");
@@ -61,27 +61,18 @@ public void OnPluginStart (){
 }
 
 public OnMapStart(){
-	WaitingEnded = false;
-	ServerCommand("mp_disable_respawn_times 1");
-	ServerCommand("mp_teams_unbalance_limit 30");
-	ServerCommand("mp_idledealmethod 2");
-	ServerCommand("mp_autoteambalance 0");
-	ServerCommand("mp_scrambleteams_auto 0");
-	ServerCommand("tf_weapon_criticals_melee 0");
-	ServerCommand("sm_cvar tf_avoidteammates 0");
+
 	PrecacheSound("vo/medic_medic03.mp3");
 	PrecacheSound("vo/medic_no01.mp3");
+
+	HookEntityOutput("trigger_capture_area", "OnStartCap", StartCap);
+
+	CreateTimer(3.0, OpenDoors, _, TIMER_REPEAT);
 }
 
 public void OnClientPostAdminCheck(int client){
 
 	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
-
-}
-
-public void TF2_OnWaitingForPlayersEnd(){
-
-	WaitingEnded = true;
 
 }
 
@@ -126,12 +117,13 @@ public Action CommandListener_Build(client, const String:command[], argc)
 
 public Action CommandListener_ChangeTeam(client, const String:command[],argc){
 
-	(client, "{BLA}[EVZ]:{N} %t", "betray_team");
+	Client_PrintToChat(client,false, "{BLA}[EVZ]:{N} %t", "betray_team");
 	return Plugin_Handled;
 
 }
 
 public Action CommandListener_ChangeClass(client,const String:command[], argc){
+	EmptyServer = false;
 	decl String:arg1[256];
 	GetCmdArg(1, arg1, sizeof(arg1));
 	if(strcmp(arg1,"medic",false)==0 && TF2_GetClientTeam(client)==TFTeam_Blue ) {
@@ -170,17 +162,24 @@ public Action Evt_PlayerSpawnChangeTeam(Event event, const char[] name, bool don
 
 	int client = GetClientOfUserId(event .GetInt("userid"));
 
-	if(InfectionStarted){
+	if(Client_IsValid(client) && Client_IsIngame(client)){
 
-		if(TF2_GetClientTeam(client)!=TFTeam_Blue){
-			function_SafeTeamChange(client,TFTeam_Blue);
-			function_SafeRespawn(client);
+		if(InfectionStarted){
+
+			if(TF2_GetClientTeam(client)!=TFTeam_Blue){
+				function_SafeTeamChange(client,TFTeam_Blue);
+				function_SafeRespawn(client);
+				function_makeZombie(client,false);
+			}
+
+		}else if(TF2_GetClientTeam(client)!=TFTeam_Red){
+				function_SafeTeamChange(client,TFTeam_Red);
+				function_SafeRespawn(client);
 		}
 
-	}else if(TF2_GetClientTeam(client)!=TFTeam_Red){
-			function_SafeTeamChange(client,TFTeam_Red);
-			function_SafeRespawn(client);
 	}
+
+
 
 
 }
@@ -188,25 +187,28 @@ public Action Evt_PlayerSpawnChangeTeam(Event event, const char[] name, bool don
 public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool dontBroadcast){
 
 	int client = GetClientOfUserId(event .GetInt("userid"));
-	CreateTimer(3.5,reCollide,client);
-	if(TF2_GetClientTeam(client) == TFTeam_Red ){
 
-		if(TF2_GetPlayerClass(client)!=TFClass_Engineer){
-			TF2_SetPlayerClass(client,TFClass_Engineer);
-			TF2_RespawnPlayer(client);
+	if(Client_IsValid(client) && Client_IsIngame(client)){
+
+		CreateTimer(3.5,reCollide,client);
+		if(TF2_GetClientTeam(client) == TFTeam_Red ){
+
+			if(TF2_GetPlayerClass(client)!=TFClass_Engineer){
+				TF2_SetPlayerClass(client,TFClass_Engineer);
+				TF2_RespawnPlayer(client);
+			}
+
+			SetEntProp(client, Prop_Data, "m_CollisionGroup", 3);
+
+		}
+		if(TF2_GetClientTeam(client)==TFTeam_Blue){
+			function_makeZombie(client, false);
+			function_StripToMelee(client);
 		}
 
-		SetEntProp(client, Prop_Data, "m_CollisionGroup", 3);
-
-	}
-	if(TF2_GetClientTeam(client)==TFTeam_Blue){
-		function_makeZombie(client);
-		function_StripToMelee(client);
+		function_CheckVictory();
 	}
 
-
-
-	function_CheckVictory();
 
 }
 
@@ -231,7 +233,7 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 				if(damage>Entity_GetHealth(victim)){
 					SetEntProp(attacker, Prop_Data, "m_CollisionGroup",3);
 					CreateTimer(3.5,reCollide,attacker);
-					function_makeZombie(victim);
+					function_makeZombie(victim,false);
 					Client_SetScore(attacker,Client_GetScore(attacker)+1);
 					function_CheckVictory();
 					return Plugin_Handled;
@@ -247,17 +249,18 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 		}
 
 
-    return Plugin_Continue;
+		return Plugin_Continue;
 }
 
 public Action Evt_PlayerDeath(Event event, const char[] name, bool dontBroadcast){
-	if(WaitingEnded && InfectionStarted) {
+	if( InfectionStarted) {
 
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		Client_PrintToChat(client, false,"{BLA}[EVZ]:{N} %t", "infected");
+		function_CheckVictory();
 		TF2_ChangeClientTeam(client,TFTeam_Blue);
 		TF2_SetPlayerClass(client, TFClass_Medic, true, true);
-		function_CheckVictory();
+
 
 	}
 
@@ -267,7 +270,15 @@ public Action Evt_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	function_CheckVictory();
 }
 
+public StartCap(const String:output[], caller, activator, Float:delay)
+{
+	AcceptEntityInput(caller, "Disable");
+
+}
+
+
 public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast){
+	function_serverCommands();
 	function_AllEngineers();
 	SuperZombies = false;
 	InfectionStarted = false;
@@ -331,9 +342,11 @@ public Action reCollide(Handle timer, any client){
 		}
 
 	}
+}
 
+public Action OpenDoors(Handle timer){
 
-
+	function_sendEntitiesInput("func_door","Open");
 }
 
 public Action CountDownStart(Handle timer){
@@ -392,17 +405,16 @@ public Action CountDown(Handle timer){
 }
 
 
-
 public Action Infection(Handle timer){
 	function_SelectFirstZombies();
 
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "infection_unleashed");
 	ServerCommand("sm_cvar tf_boost_drain_time 999");
 	InfectionStarted = true;
+	function_sendEntitiesInput("func_regenerate", "Disable");
 	InfectionHandle = INVALID_HANDLE;
 
 }
-
 
 public Action RedWon(Handle timer){
 	function_teamWin(TFTeam_Red)
@@ -436,15 +448,6 @@ public function_sendEntitiesInput(const char[] entityname, const char[] input){
 	}
 }
 
-public void function_deleteEntities(const char[] entityname, bool isDoor){
-
-	if(isDoor){
-		function_sendEntitiesInput(entityname, "Open");
-	}
-	function_sendEntitiesInput(entityname,"Kill");
-
-}
-
 
 public void function_AllEngineers(){
 	//loop from smlib
@@ -458,12 +461,6 @@ public void function_AllEngineers(){
 			continue;
 		}
 
-		if (IsFakeClient(client)) {
-			continue;
-		}
-
-		int team = TF2_GetClientTeam(client);
-
 		function_SafeTeamChange(client,TFTeam_Red);
 		TF2_RespawnPlayer(client);
 
@@ -472,12 +469,17 @@ public void function_AllEngineers(){
 }
 
 public void function_StripToMelee(int client){
+	if(Client_IsValid(client) && Client_IsIngame(client)){
 
-	TF2_AddCondition(client, view_as<TFCond>(85), TFCondDuration_Infinite, 0);
-	TF2_AddCondition(client, view_as<TFCond>(41), TFCondDuration_Infinite, 0);
-	TF2_RemoveCondition(client, view_as<TFCond>(85) );
-	TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-	TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
+		TF2_AddCondition(client, view_as<TFCond>(85), TFCondDuration_Infinite, 0);
+		TF2_AddCondition(client, view_as<TFCond>(41), TFCondDuration_Infinite, 0);
+		TF2_RemoveCondition(client, view_as<TFCond>(85) );
+		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
+
+
+	}
+
 
 }
 
@@ -522,17 +524,16 @@ public void function_CheckVictory(){
 	//loop from smlib
 	for (new client=1; client <= MaxClients; client++) {
 
-		if (!IsClientConnected(client)) {
+		if( !(IsClientConnected(client) && IsClientInGame(client) ) ){
+
 			continue;
 		}
 
-		if (!IsClientInGame(client)) {
-			continue;
-		}
+
 
 		TFTeam team = TF2_GetClientTeam(client);
 
-		if(team==TFTeam_Blue){
+		if(team==TFTeam_Blue && IsPlayerAlive(client)){
 			AllMedicsDead = false;
 
 		}else if(team==TFTeam_Red){
@@ -590,7 +591,7 @@ public void function_SelectFirstZombies(){
 	//following code will make needed players start as medic
 	while(StartingMedics>0) {
 			int client = Client_GetRandom(CLIENTFILTER_INGAMEAUTH);
-			function_makeZombie(client);
+			function_makeZombie(client,true);
 			StartingMedics--;
 
 	}
@@ -600,26 +601,23 @@ public function_PrepareMap(){
 
 //Disabling all other game related entities
 	SetVariantInt(0);
+	function_sendEntitiesInput("filter_activator_tfteam", "Kill");
 	function_sendEntitiesInput("trigger_capture_area","SetTeam");
 	function_sendEntitiesInput("trigger_capture_area","Disable");
 	function_sendEntitiesInput("item_teamflag","Disable");
-	SetVariantInt(0);
-
-	function_DeleteDoors();
-
-}
-/*
- * This function deletes door and spawnroom things
- */
-public function_DeleteDoors(){ //following code opens all doors. This part was made by myself
-
-	function_deleteEntities("func_door",true);
-	function_deleteEntities("func_door_rotating",true);
-	function_deleteEntities("func_respawnroomvisualizer",false);
+	function_sendEntitiesInput("func_respawnroomvisualizer","Disable");
 	function_sendEntitiesInput("trigger_teleport","Enable");
+	function_sendEntitiesInput("func_respawnroom","Kill");
+	function_sendEntitiesInput("func_nobuild", "Kill");
+	function_sendEntitiesInput("func_door", "Open");
+	SetVariantInt(3);
+
+
+
 
 }
-public void function_makeZombie(int client){
+
+public void function_makeZombie(int client, bool firstInfected){
 	int EntProp = GetEntProp(client, Prop_Send, "m_lifeState");
 	SetEntProp(client, Prop_Send, "m_lifeState", 2);
 	ChangeClientTeam(client, view_as<int>(TFTeam_Blue) );
@@ -634,8 +632,12 @@ public void function_makeZombie(int client){
 
 	float clientPos[3];
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", clientPos);
-
 	Explode(clientPos, 0.0, 500.0, "merasmus_bomb_explosion_blast", "vo/medic_medic03.mp3");
+	if(firstInfected){
+		TF2_AddCondition(client, view_as<TFCond>(29), 30.0);
+		SetEntProp(client, Prop_Send, "m_iHealth", ZombieHealth+500);
+		SetEntProp(client, Prop_Data, "m_iHealth", ZombieHealth+500);
+	}
 
 }
 //code found in snippets section of the forum
@@ -652,21 +654,36 @@ public void Explode(float flPos[3], float flDamage, float flRadius, const char[]
 
     AcceptEntityInput(iBomb, "Detonate");
 }
-public void function_teamWin(TFTeam team) //code from hide n seek
+public void function_teamWin(TFTeam team) //modified version of code in smlib
 {
 	InfectionStarted = false;
-	//this is the code that actually makes a team win
-	int edict_index = FindEntityByClassname(-1, "team_control_point_master");
-	if (edict_index == -1)
-	{
-		int g_ctf = CreateEntityByName("team_control_point_master");
-		DispatchSpawn(g_ctf);
-		AcceptEntityInput(g_ctf, "Enable");
+	new game_round_win = FindEntityByClassname(-1, "game_round_win");
+
+	if (game_round_win == -1) {
+		game_round_win = CreateEntityByName("game_round_win");
+
+		if (game_round_win == -1) {
+			ThrowError("Unable to find or create entity \"game_round_win\"");
+		}
 	}
 
-	int search = FindEntityByClassname(-1, "team_control_point_master")
-	SetVariantInt(view_as<int>(team) );
-	AcceptEntityInput(search, "SetWinner");
+	SetEntProp(game_round_win, Prop_Data,"m_bForceMapReset",1);
+	SetEntProp(game_round_win, Prop_Data,"m_bSwitchTeamsOnWin",0);
 
+	SetVariantInt(view_as<int>(team));
+	AcceptEntityInput(game_round_win, "SetTeam");
+	AcceptEntityInput(game_round_win, "RoundWin");
 
+}
+
+public void function_serverCommands(){
+
+	ServerCommand("mp_disable_respawn_times 1");
+	ServerCommand("mp_teams_unbalance_limit 30");
+	ServerCommand("mp_idledealmethod 2");
+	ServerCommand("mp_autoteambalance 0");
+	ServerCommand("mp_scrambleteams_auto 0");
+	ServerCommand("tf_weapon_criticals_melee 0");
+	ServerCommand("sm_cvar tf_avoidteammates 0");
+	ServerCommand("sm_cvar tf_fastbuild 1");
 }
