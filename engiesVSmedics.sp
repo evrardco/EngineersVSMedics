@@ -103,6 +103,13 @@ public Action Command_zveinfect(int client, int args){
 	function_makeZombie(client,true);
 	return Plugin_Handled;
 }
+//events and forwards
+
+
+public Action:TF2_OnPlayerTeleport(client, teleporter, &bool:result) {
+		result = true;
+		return Plugin_Changed;
+}
 
 /*
  * This code is from Tsunami's TF2 build restrictions. It prevents engineers
@@ -284,9 +291,10 @@ public Action Evt_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		Client_PrintToChat(client, false,"{BLA}[EVZ]:{N} %t", "infected");
+		function_CheckVictory();
 		TF2_ChangeClientTeam(client,TFTeam_Blue);
 		TF2_SetPlayerClass(client, TFClass_Medic, true, true);
-		function_CheckVictory();
+
 
 	}
 
@@ -308,7 +316,7 @@ public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	function_AllEngineers();
 	SuperZombies = false;
 	InfectionStarted = false;
-	ServerCommand("sv_gravity 800");
+	ServerCommand("sm_gravity @all 1");
 	ServerCommand("sm_cvar tf_boost_drain_time 0");
 
 	if(RedWonHandle!=INVALID_HANDLE) {
@@ -385,7 +393,7 @@ public Action CountDownStart(Handle timer){
 public Action SuperZombiesTimer(Handle timer){
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "power_up");
 	SuperZombies = true;
-	ServerCommand("sv_gravity 400");
+	ServerCommand("sm_gravity @all 0.5");
 	//Loop from smlib
 	for (new client=1; client <= MaxClients; client++) {
 
@@ -541,7 +549,7 @@ public void function_SafeRespawn(int client){
 
 
 public void function_CheckVictory(){
-	PrintToServer("Checking victory conditions...");
+	/*PrintToServer("Checking victory conditions...");
 	if(!InfectionStarted){
 		PrintToServer("The infection hasn't started, no one can win yet !");
 		return;
@@ -554,6 +562,7 @@ public void function_CheckVictory(){
 		if( !(IsClientConnected(client) && IsClientInGame(client) ) ){
 			continue;
 		}
+
 		if(NoPlayer){
 			PrintToServer("One player is in the game...");
 		}
@@ -561,8 +570,12 @@ public void function_CheckVictory(){
 
 
 		TFTeam team = TF2_GetClientTeam(client);
-		AllMedicsDead = !(team==TFTeam_Blue);
-		AllEngineersDead = !(team==TFTeam_Red);
+
+		if(team==TFTeam_Blue){
+			AllMedicsDead = false;
+		}else if(team==TFTeam_Blue){
+			AllEngineersDead = false;
+		}
 
 	}
 
@@ -584,7 +597,60 @@ public void function_CheckVictory(){
 
 		}
 
+	}*/
+
+	if(InfectionStarted==false) {
+		return;
 	}
+	bool AllEngineersDead = true;
+	bool AllMedicsDead = true;
+	bool NoPlayer = true;
+	//loop from smlib
+	for (new client=1; client <= MaxClients; client++) {
+
+		if (!IsClientConnected(client)) {
+			continue;
+		}
+
+		if (!IsClientInGame(client)) {
+			continue;
+		}
+
+		NoPlayer = false;
+
+		TFTeam team = TF2_GetClientTeam(client);
+
+		if(team==TFTeam_Blue){
+			AllMedicsDead = false;
+
+		}else if(team==TFTeam_Red){
+			AllEngineersDead = false;
+		}
+
+	}
+
+	if(NoPlayer){
+		PrintToServer("Tried to trigger victory on an empty server !");
+		return;
+	}
+
+	if(InfectionStarted){
+
+		if(AllMedicsDead){
+			PrintToServer("Red team won !");
+			function_teamWin(TFTeam_Red);
+			return;
+		}
+
+		if(AllEngineersDead){
+			PrintToServer("Blue team won !");
+			function_teamWin(TFTeam_Blue);
+
+		}
+
+	}
+
+
 
 
 }
