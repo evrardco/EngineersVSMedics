@@ -17,7 +17,6 @@ ConVar zve_super_zombies = null;
 //Game related global variables
 bool InfectionStarted = false;
 bool SuperZombies = false;
-bool EmptyServer = true;
 int ZombieHealth = 1500;
 int CountDownCounter = 0;
 float ActualRoundTime = 0.0;
@@ -49,6 +48,13 @@ public void OnPluginStart (){
 	AddCommandListener(CommandListener_ChangeClass, "joinclass");
 	AddCommandListener(CommandListener_ChangeTeam, "jointeam");
 	AddCommandListener(CommandListener_Spectate, "spectate");
+	//Commands
+	RegServerCmd("zve_debug_checkvictory", DebugCheckVictory);
+	RegAdminCmd("sm_zvecure", Command_zvecure, ADMFLAG_KICK, "Makes an admin be a red engineer");
+	RegAdminCmd("sm_zveinfect", Command_zveinfect, ADMFLAG_KICK, "Makes an admin be a Super Zombie");
+
+
+
 	//CONVARS
 
 	zve_round_time = CreateConVar("zve_round_time", "314", "Round time, 5 minutes by default.");
@@ -74,6 +80,28 @@ public void OnClientPostAdminCheck(int client){
 
 	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 
+}
+//Commands
+public Action DebugCheckVictory(int args){
+
+	function_CheckVictory();
+	return Plugin_Handled;
+
+}
+
+public Action Command_zvecure(int client, int args){
+	int EntProp = GetEntProp(client, Prop_Send, "m_lifeState");
+	SetEntProp(client, Prop_Send, "m_lifeState", 2);
+	ChangeClientTeam(client, view_as<int>(TFTeam_Red) );
+	TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
+	SetEntProp(client, Prop_Send, "m_lifeState", EntProp);
+	TF2_RegeneratePlayer(client);
+	return Plugin_Handled;
+}
+
+public Action Command_zveinfect(int client, int args){
+	function_makeZombie(client,true);
+	return Plugin_Handled;
 }
 
 /*
@@ -123,7 +151,6 @@ public Action CommandListener_ChangeTeam(client, const String:command[],argc){
 }
 
 public Action CommandListener_ChangeClass(client,const String:command[], argc){
-	EmptyServer = false;
 	decl String:arg1[256];
 	GetCmdArg(1, arg1, sizeof(arg1));
 	if(strcmp(arg1,"medic",false)==0 && TF2_GetClientTeam(client)==TFTeam_Blue ) {
@@ -257,10 +284,9 @@ public Action Evt_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		Client_PrintToChat(client, false,"{BLA}[EVZ]:{N} %t", "infected");
-		function_CheckVictory();
 		TF2_ChangeClientTeam(client,TFTeam_Blue);
 		TF2_SetPlayerClass(client, TFClass_Medic, true, true);
-
+		function_CheckVictory();
 
 	}
 
@@ -515,42 +541,45 @@ public void function_SafeRespawn(int client){
 
 
 public void function_CheckVictory(){
-
-	if(InfectionStarted==false) {
+	PrintToServer("Checking victory conditions...");
+	if(!InfectionStarted){
+		PrintToServer("The infection hasn't started, no one can win yet !");
 		return;
 	}
 	bool AllEngineersDead = true;
 	bool AllMedicsDead = true;
-	//loop from smlib
+	bool NoPlayer = true;
 	for (new client=1; client <= MaxClients; client++) {
 
 		if( !(IsClientConnected(client) && IsClientInGame(client) ) ){
-
 			continue;
 		}
-
+		if(NoPlayer){
+			PrintToServer("One player is in the game...");
+		}
+		NoPlayer = false;
 
 
 		TFTeam team = TF2_GetClientTeam(client);
-
-		if(team==TFTeam_Blue && IsPlayerAlive(client)){
-			AllMedicsDead = false;
-
-		}else if(team==TFTeam_Red){
-			AllEngineersDead = false;
-		}
+		AllMedicsDead = !(team==TFTeam_Blue);
+		AllEngineersDead = !(team==TFTeam_Red);
 
 	}
 
+	if(NoPlayer){
+		PrintToServer("No player has been found, aborting...");
+		return;
+	}
 
 	if(InfectionStarted){
-
 		if(AllMedicsDead){
+			PrintToServer("Red team has won !");
 			function_teamWin(TFTeam_Red);
 			return;
 		}
 
 		if(AllEngineersDead){
+			PrintToServer("Blue team has won !");
 			function_teamWin(TFTeam_Blue);
 
 		}
