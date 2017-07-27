@@ -121,12 +121,6 @@ public Action:TF2_OnPlayerTeleport(client, teleporter, &bool:result) {
  */
 public Action CommandListener_Build(client, const String:command[], argc)
 {
-
-	//initializing the array that will contain all user collision information
-
-
-
-
 	// Get arguments
 	decl String:sObjectType[256]
 	GetCmdArg(1, sObjectType, sizeof(sObjectType));
@@ -137,9 +131,7 @@ public Action CommandListener_Build(client, const String:command[], argc)
 
 
 	if(iObjectType!=view_as<int>(TFObject_Teleporter)){
-		SetEntProp(client, Prop_Data, "m_CollisionGroup", 5);
 		//Feeding an array because i can only give one custom variable to the timer
-		CreateTimer(3.0, reCollide, client);
 	}
 
 
@@ -241,7 +233,6 @@ public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool do
 				TF2_RespawnPlayer(client);
 			}
 
-			SetEntProp(client, Prop_Data, "m_CollisionGroup", 3);
 
 		}
 		if(TF2_GetClientTeam(client)==TFTeam_Blue){
@@ -274,7 +265,6 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 			if(damagetype==134221952){
 
 				if(damage>Entity_GetHealth(victim)){
-					SetEntProp(attacker, Prop_Data, "m_CollisionGroup",3);
 					CreateTimer(3.5,reCollide,attacker);
 					function_makeZombie(victim,false);
 					Client_SetScore(attacker,Client_GetScore(attacker)+1);
@@ -373,19 +363,7 @@ public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "source_plugin");
 
 }
-//TIMERS
-public Action reCollide(Handle timer, any client){
 
-	if(Client_IsIngame(client) && Client_IsValid(client)){
-
-		if(TF2_GetClientTeam(client)==TFTeam_Red){
-			SetEntProp(client, Prop_Data, "m_CollisionGroup",3);
-		}else if(TF2_GetClientTeam(client)==TFTeam_Blue){
-			SetEntProp(client, Prop_Data, "m_CollisionGroup", 5);
-		}
-
-	}
-}
 
 public Action OpenDoors(Handle timer){
 
