@@ -738,9 +738,11 @@ public void Explode(float flPos[3], float flDamage, float flRadius, const char[]
 }
 public Action function_teamWin(TFTeam team) //modified version of code in smlib
 {
+	//avoiding team not initialized crash
 	if(Client_GetCount(true,true)<2){
 		return Plugin_Stop;
 	}
+
 	InfectionStarted = false;
 	new game_round_win = FindEntityByClassname(-1, "game_round_win");
 
