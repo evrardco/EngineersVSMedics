@@ -30,7 +30,7 @@ Handle CountDownHandle = INVALID_HANDLE;
 Handle CountDownStartHandle = INVALID_HANDLE;
 
 public Plugin myinfo ={
-	name = "Engineers Vs Zombies rewrote",
+	name = "Engineers Vs Zombies rewritten",
 	author = "shewowkees",
 	description = "zombie like gamemode",
 	version = "1.2",
@@ -95,6 +95,9 @@ public Action Command_zvecure(int client, int args){
 	ChangeClientTeam(client, view_as<int>(TFTeam_Red) );
 	TF2_SetPlayerClass(client, TFClass_Engineer, true, true);
 	SetEntProp(client, Prop_Send, "m_lifeState", EntProp);
+	int MaxHealth = GetEntProp(client, Prop_Data, "m_iMaxHealth");
+	SetEntProp(client, Prop_Data, "m_iHealth", MaxHealth);
+
 	TF2_RegeneratePlayer(client);
 	return Plugin_Handled;
 }
@@ -122,9 +125,7 @@ public Action CommandListener_Build(client, const String:command[], argc)
 	//initializing the array that will contain all user collision information
 
 
-	SetEntProp(client, Prop_Data, "m_CollisionGroup", 5);
-	//Feeding an array because i can only give one custom variable to the timer
-	CreateTimer(3.0, reCollide, client);
+
 
 	// Get arguments
 	decl String:sObjectType[256]
@@ -133,6 +134,14 @@ public Action CommandListener_Build(client, const String:command[], argc)
 	// Get object mode, type and client's team
 	new iObjectType = StringToInt(sObjectType),
 	iTeam = GetClientTeam(client);
+
+
+	if(iObjectType!=view_as<int>(TFObject_Teleporter)){
+		SetEntProp(client, Prop_Data, "m_CollisionGroup", 5);
+		//Feeding an array because i can only give one custom variable to the timer
+		CreateTimer(3.0, reCollide, client);
+	}
+
 
 	// If invalid object type passed, or client is not on Blu or Red
 	if(iObjectType < view_as<int>(TFObject_Dispenser) || iObjectType > view_as<int>(TFObject_Sentry) || iTeam < view_as<int>(TFTeam_Red) ) {
@@ -616,7 +625,7 @@ public void function_CheckVictory(){
 			continue;
 		}
 
-		NoPlayer = false;
+
 
 		TFTeam team = TF2_GetClientTeam(client);
 
@@ -629,7 +638,7 @@ public void function_CheckVictory(){
 
 	}
 
-	if(NoPlayer){
+	if(AllEngineersDead && AllMedicsDead){
 		PrintToServer("Tried to trigger victory on an empty server !");
 		return;
 	}
@@ -686,6 +695,9 @@ public void function_SelectFirstZombies(){
 	//following code will make needed players start as medic
 	while(StartingMedics>0) {
 			int client = Client_GetRandom(CLIENTFILTER_INGAMEAUTH);
+			if(TF2_GetClientTeam(client)==TFTeam_Blue){
+				continue;
+			}
 			function_makeZombie(client,true);
 			StartingMedics--;
 
