@@ -736,8 +736,11 @@ public void Explode(float flPos[3], float flDamage, float flRadius, const char[]
 
     AcceptEntityInput(iBomb, "Detonate");
 }
-public void function_teamWin(TFTeam team) //modified version of code in smlib
+public Action function_teamWin(TFTeam team) //modified version of code in smlib
 {
+	if(Client_GetCount(true,true)<2){
+		return Plugin_Stop;
+	}
 	InfectionStarted = false;
 	new game_round_win = FindEntityByClassname(-1, "game_round_win");
 
@@ -756,6 +759,8 @@ public void function_teamWin(TFTeam team) //modified version of code in smlib
 	AcceptEntityInput(game_round_win, "SetTeam");
 	AcceptEntityInput(game_round_win, "RoundWin");
 
+	return Plugin_Handled;
+
 }
 
 public void function_serverCommands(){
@@ -766,6 +771,5 @@ public void function_serverCommands(){
 	ServerCommand("mp_autoteambalance 0");
 	ServerCommand("mp_scrambleteams_auto 0");
 	ServerCommand("tf_weapon_criticals_melee 0");
-	ServerCommand("sm_cvar tf_avoidteammates 0");
 	ServerCommand("sm_cvar tf_fastbuild 1");
 }

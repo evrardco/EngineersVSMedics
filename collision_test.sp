@@ -24,7 +24,7 @@ public void OnClientPostAdminCheck(int client){
 
 public bool OnShouldCollide(int entity, int collisiongroup, int contentsmask, bool originalResult){
 
-	/*char Disp[16]= "X";
+	char Disp[16]= "X";
 
 	IntToString(entity, Disp, 16);
 
@@ -40,11 +40,11 @@ public bool OnShouldCollide(int entity, int collisiongroup, int contentsmask, bo
 
 	IntToString(originalResult,Disp,16);
 
-	PrintToChat(entity,Disp);*/
+	PrintToChat(entity,Disp);
 
 	if(Client_IsValid(entity) && Client_IsIngame(entity)){
 
-		if(TF2_GetClientTeam(entity)==TFTeam_Red && contentsmask==33640459){
+		if(TF2_GetClientTeam(entity)==TFTeam_Red && contentsmask==33640459 ){
 			return false;
 		}
 
