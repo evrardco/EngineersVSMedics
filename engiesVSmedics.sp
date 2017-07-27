@@ -225,7 +225,6 @@ public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool do
 
 	if(Client_IsValid(client) && Client_IsIngame(client)){
 
-		CreateTimer(3.5,reCollide,client);
 		if(TF2_GetClientTeam(client) == TFTeam_Red ){
 
 			if(TF2_GetPlayerClass(client)!=TFClass_Engineer){
@@ -265,7 +264,6 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 			if(damagetype==134221952){
 
 				if(damage>Entity_GetHealth(victim)){
-					CreateTimer(3.5,reCollide,attacker);
 					function_makeZombie(victim,false);
 					Client_SetScore(attacker,Client_GetScore(attacker)+1);
 					function_CheckVictory();
@@ -713,7 +711,6 @@ public void function_makeZombie(int client, bool firstInfected){
 
 	SetEntProp(client, Prop_Send, "m_iHealth", ZombieHealth);
 	SetEntProp(client, Prop_Data, "m_iHealth", ZombieHealth);
-	CreateTimer(3.5,reCollide,client);
 
 	float clientPos[3];
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", clientPos);
