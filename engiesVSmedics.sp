@@ -275,7 +275,6 @@ public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname
 		int itemDefIndex = GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 
 		if(itemDefIndex==527){//Prevents crits for widow maker
-			PrintToChat(client,"Widow Maker detected");
 			result=false;
 			return Plugin_Handled;
 		}
@@ -292,11 +291,12 @@ public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname
 }
 
 
-public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
-{
+public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3]){
+
 		if(!Client_IsValid(victim)||!Client_IsValid(attacker)){
 			return Plugin_Continue;
 		}
+
 		if(TF2_GetClientTeam(victim)==TFTeam_Red && TF2_GetClientTeam(attacker)==TFTeam_Blue){//that number is the one of the melee medic weapon
 			if(damagetype==134221952){
 
@@ -316,9 +316,9 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 			return Plugin_Handled;
 		}
 
-
 		return Plugin_Continue;
 }
+
 
 public Action Evt_PlayerDeath(Event event, const char[] name, bool dontBroadcast){
 	if( InfectionStarted) {
