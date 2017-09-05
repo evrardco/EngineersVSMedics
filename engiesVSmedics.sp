@@ -18,9 +18,14 @@ ConVar zve_spawn_building = null;
 //Game related global variables
 bool InfectionStarted = false;
 bool SuperZombies = false;
-int ZombieHealth = 1500;
+int ZombieHealth = 300;
 int CountDownCounter = 0;
 float ActualRoundTime = 0.0;
+int FirstZombies[4];
+char EntitiesToDelete[16][256];
+int EntitiesToDeleteIndex;
+int VolunteersIndex;
+int Volunteers[5];
 
 
 //Timer Handles
@@ -29,6 +34,7 @@ Handle SuperZombiesTimerHandle = INVALID_HANDLE;
 Handle InfectionHandle = INVALID_HANDLE;
 Handle CountDownHandle = INVALID_HANDLE;
 Handle CountDownStartHandle = INVALID_HANDLE;
+Handle Timer_MakeMedicsHealingHandle = INVALID_HANDLE;
 
 public Plugin myinfo ={
 	name = "Engineers Vs Zombies rewritten",
@@ -50,7 +56,9 @@ public void OnPluginStart (){
 	AddCommandListener(CommandListener_ChangeTeam, "jointeam");
 	AddCommandListener(CommandListener_Spectate, "spectate");
 	//Commands
+	RegConsoleCmd("sm_infectme", Cmd_InfectMe);
 	RegServerCmd("zve_debug_checkvictory", DebugCheckVictory);
+	RegServerCmd("zve_delete_entities_named", Cmd_DeletDis);
 	RegAdminCmd("sm_zvecure", Command_zvecure, ADMFLAG_KICK, "Makes an admin be a red engineer");
 	RegAdminCmd("sm_zveinfect", Command_zveinfect, ADMFLAG_KICK, "Makes an admin be a Super Zombie");
 
@@ -65,6 +73,10 @@ public void OnPluginStart (){
 	zve_spawn_building = CreateConVar("zve_spawn_building","1.0","Wether or not spawn building should be activated. Set to 0 to disbale")
 	AutoExecConfig(true, "plugin_zve");
 
+	EntitiesToDeleteIndex = 0;
+	for(int i=0;i<16;i++) EntitiesToDelete[i]="Rick Astley R0X";
+
+	Timer_MakeMedicsHealingHandle = CreateTimer(1.0,Timer_MakeMedicsHealing,_,TIMER_REPEAT);
 	LoadTranslations("engiesVSmedics.phrases");
 }
 
@@ -76,13 +88,37 @@ public OnMapStart(){
 	HookEntityOutput("trigger_capture_area", "OnStartCap", StartCap);
 
 	CreateTimer(3.0, OpenDoors, _, TIMER_REPEAT);
+
+	for(int i=0;i<4;i++) FirstZombies[i]= -1;
+	for(int i=0;i<5;i++) Volunteers[i] = -1;
+	VolunteersIndex = 0;
+
+
+
+
+}
+
+public void OnMapEnd(){
+
+	for(int i=0;i<16;i++) EntitiesToDelete[i]="Rick Astley R0X";
+	KillTimer(Timer_MakeMedicsHealingHandle);
+
 }
 
 public void OnClientPostAdminCheck(int client){
 
 	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+	SDKHook(client, SDKHook_GetMaxHealth, OnGetMaxHealth);
 
 }
+public Action OnGetMaxHealth(int client, int &maxHealth){
+	if(TF2_GetPlayerClass(client)==TFClass_Medic){
+		maxHealth = ZombieHealth;
+		return Plugin_Changed;
+	}
+	return Plugin_Continue;
+}
+
 //Commands
 public Action DebugCheckVictory(int args){
 
@@ -108,6 +144,32 @@ public Action Command_zveinfect(int client, int args){
 	function_makeZombie(client,true);
 	return Plugin_Handled;
 }
+
+public Action Cmd_InfectMe(int client, int args){
+
+	if(VolunteersIndex>=4) {
+		PrintToChat(client,"[EVZ]: There are already too many volunteers !");
+		return Plugin_Handled;
+	}
+	for(int i=0;i<5;i++){
+		if(Volunteers[i]==client){
+			PrintToChat(client,"[EVZ]: You already registered as a volunteer !")
+		}
+	}
+
+	Volunteers[VolunteersIndex] = client;
+	VolunteersIndex++;
+
+	PrintToChat(client,"[EVZ]: When infection starts, you will be a zombie !");
+	function_MakePreInfected(client, 1);
+
+	return Plugin_Handled;
+
+
+
+
+
+}
 //events and forwards
 
 public OnEntityCreated(entity, const String:classname[]) {
@@ -121,6 +183,7 @@ public OnEntityCreated(entity, const String:classname[]) {
 	shouldKill = shouldKill || StrEqual(classname, "info_powerup_spawn");
 	shouldKill = shouldKill || StrEqual(classname, "item_powerup_crit");
 	shouldKill = shouldKill || StrEqual(classname, "item_powerup_uber");
+	shouldKill = shouldKill || StrEqual(classname, "tf_spell_pickup");
 
 
 
@@ -129,6 +192,16 @@ public OnEntityCreated(entity, const String:classname[]) {
 		PrintToServer( "created = %s", classname );
 		SDKHook(entity, SDKHook_Spawn, koth_spawn);
 	}
+}
+
+public Action Cmd_DeletDis(int args){
+	GetCmdArgString(EntitiesToDelete[EntitiesToDeleteIndex],256);
+	EntitiesToDeleteIndex++;
+
+	return Plugin_Handled;
+
+
+
 }
 
 public Action:TF2_OnPlayerTeleport(client, teleporter, &bool:result) {
@@ -271,11 +344,10 @@ public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool do
 
 public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname, bool &result){
 
-	if(TF2_GetClientTeam(client)==TFTeam_Red){
+	/*if(TF2_GetClientTeam(client)==TFTeam_Red){
 		int itemDefIndex = GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 
 		if(itemDefIndex==527){//Prevents crits for widow maker
-			PrintToChat(client,"Widow Maker detected");
 			result=false;
 			return Plugin_Handled;
 		}
@@ -285,18 +357,19 @@ public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname
 		}
 
 		result = true;
-	}
+	}*/
 	return Plugin_Handled;
 
 
 }
 
 
-public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
-{
+public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3]){
+
 		if(!Client_IsValid(victim)||!Client_IsValid(attacker)){
 			return Plugin_Continue;
 		}
+
 		if(TF2_GetClientTeam(victim)==TFTeam_Red && TF2_GetClientTeam(attacker)==TFTeam_Blue){//that number is the one of the melee medic weapon
 			if(damagetype==134221952){
 
@@ -316,9 +389,9 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 			return Plugin_Handled;
 		}
 
-
 		return Plugin_Continue;
 }
+
 
 public Action Evt_PlayerDeath(Event event, const char[] name, bool dontBroadcast){
 	if( InfectionStarted) {
@@ -346,6 +419,8 @@ public StartCap(const String:output[], caller, activator, Float:delay)
 
 
 public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast){
+
+
 	function_serverCommands();
 	function_AllEngineers();
 	SuperZombies = false;
@@ -392,23 +467,48 @@ public Action Evt_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 	function_PrepareMap();
 
+	for(int i=0;i<EntitiesToDeleteIndex%16;i++){
+
+		int kenny = Entity_FindByName(EntitiesToDelete[i]);
+
+		if(kenny!=INVALID_ENT_REFERENCE){
+			Entity_Kill(kenny,true);
+		}
+
+	}
+
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "version");
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "red_goal");
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "blue_goal");
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "source_plugin");
 
 }
+public Action Timer_MakeMedicsHealing(Handle timer){
+	for(int i=0;i<MaxClients;i++){
 
+		if(!Client_IsValid(i)) continue;
+		if(!IsClientInGame(i)) continue;
+		if(TF2_GetClientTeam(i)!=TFTeam_Blue) continue;
+
+		TF2_AddCondition(i,55,TFCondDuration_Infinite,0);
+	}
+
+	return Plugin_Continue;
+
+}
 
 public Action OpenDoors(Handle timer){
 
 	function_sendEntitiesInput("func_door","Open");
+
 }
 
 public Action CountDownStart(Handle timer){
-
-	CountDownHandle = CreateTimer(1.0, CountDown, _, TIMER_REPEAT);
-	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "infection_start");
+	function_SelectFirstZombies();
+	for(int i=0;i<5;i++) function_MakePreInfected(Volunteers[i],1);
+	for(int i =0;i<4;i++) function_MakePreInfected(FirstZombies[i],1);
+	//CountDownHandle = CreateTimer(1.0, CountDown, _, TIMER_REPEAT);
+	//Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "infection_start");
 	CountDownStartHandle = INVALID_HANDLE;
 }
 
@@ -466,7 +566,10 @@ public Action CountDown(Handle timer){
 
 
 public Action Infection(Handle timer){
-	function_SelectFirstZombies();
+	for(int i=0;i<VolunteersIndex;i++) function_makeZombie(Volunteers[i],false);
+	for(int i=0;i<4;i++) function_makeZombie(FirstZombies[i],true);
+	for(int i=0;i<5;i++) Volunteers[i] = -1;
+	VolunteersIndex = 0;
 
 	Client_PrintToChatAll(false,"{BLA}[EVZ]:{N} %t", "infection_unleashed");
 	ServerCommand("sm_cvar tf_boost_drain_time 999");
@@ -673,15 +776,34 @@ public Action function_SelectFirstZombies(){
 
 	}
 
+	for(int i=StartingMedics;i<4;i++){
+		FirstZombies[i]=-1;
+	}
+
 	//following code will make needed players start as medic
 	while(StartingMedics>0) {
+
 			int client = Client_GetRandom(CLIENTFILTER_INGAMEAUTH);
-			if(TF2_GetClientTeam(client)==TFTeam_Blue){
+			bool MustReselect = false;
+			for(int i=StartingMedics-1;i>-1;i--){
+				if(client==FirstZombies[i]){
+					MustReselect = true;
+					FirstZombies[i] = -1;
+				}
+			}
+
+			if(MustReselect){
+				int InvalidSelected = client;
+				while(InvalidSelected==client) client = Client_GetRandom(CLIENTFILTER_INGAMEAUTH);
 				continue;
 			}
-			function_makeZombie(client,true);
+
+			FirstZombies[StartingMedics-1]=client;
+			int InvalidSelected = client;
+			while(InvalidSelected==client) client = Client_GetRandom(CLIENTFILTER_INGAMEAUTH);
 			StartingMedics--;
 	}
+
 
 	return Plugin_Handled;
 
@@ -811,6 +933,34 @@ public Action function_teamWin(TFTeam team) //modified version of code in smlib
 	AcceptEntityInput(game_round_win, "RoundWin");
 
 	return Plugin_Handled;
+
+}
+public Action function_MakePreInfected(int client, int stage){
+
+	if(!(Client_IsValid(client) && Client_IsIngame(client))){
+
+		return Plugin_Stop;
+
+	}
+
+	int EntProp = GetEntProp(client, Prop_Send, "m_lifeState");
+	SetEntProp(client, Prop_Send, "m_lifeState", 2);
+	TF2_SetPlayerClass(client, TFClass_Medic, true, true);
+	SetEntProp(client, Prop_Send, "m_lifeState", EntProp);
+	TF2_RegeneratePlayer(client);
+	function_StripToMelee(client);
+
+	SetEntProp(client, Prop_Send, "m_iHealth", ZombieHealth);
+	SetEntProp(client, Prop_Data, "m_iHealth", ZombieHealth);
+
+	float clientPos[3];
+	GetEntPropVector(client, Prop_Send, "m_vecOrigin", clientPos);
+	TF2_AddCondition(client, view_as<TFCond>(29), 30.0);
+	SetEntProp(client, Prop_Send, "m_iHealth", ZombieHealth*2);
+	SetEntProp(client, Prop_Data, "m_iHealth", ZombieHealth*2);
+	return Plugin_Handled;
+
+
 
 }
 
