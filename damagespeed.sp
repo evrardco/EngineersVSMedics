@@ -33,7 +33,6 @@ public OnMapStart(){
 
 
 
-
 }
 
 public void OnClientPostAdminCheck(int client){
@@ -49,7 +48,8 @@ public Action Evt_PlayerSpawnChangeClass(Event event, const char[] name, bool do
 
 }
 
-public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3]){
+public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+{
 		float mult = GetConVarFloat(sm_dmgspeed_speed_multiplier);
 		int team = GetConVarInt(sm_dmgspeed_team_restriction);
     if(victim==attacker){
@@ -71,32 +71,6 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 				}
 				TeleportEntity(victim, NULL_VECTOR, NULL_VECTOR, victimPos)
 			}
-
-		}
-
-		if(TF2_GetClientTeam(attacker)==TFTeam_Red && TF2_GetClientTeam(victim)==TFTeam_Blue){
-
-			PrintToServer("[DEBUG]: Red attacking a blu");
-			if(GetPlayerWeaponSlot(attacker,1)==weapon){
-				//528 is itemDefIndex of short circuit
-				PrintToServer("[DEBUG]: Holding weapon slot 1");
-				SetEntPropFloat(weapon, Prop_Send, "m_flNextSecondaryAttack", 3.0);
-				int itemDefIndex = GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
-
-				if(itemDefIndex==528){
-					PrintToServer("[DEBUG]: Holding short circuit");
-					new offset = FindSendPropOffs("CTFPlayer", "m_iAmmo");
-					new ammo = 3;
-					int current_metal = GetEntData(attacker, offset + (ammo * 4), 4);
-					SetEntData(attacker, offset + (ammo * 4), current_metal-50, 4);  
-
-				}
-
-
-			}
-
-
-
 
 		}
 
