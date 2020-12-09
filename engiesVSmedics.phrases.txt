@@ -4,95 +4,111 @@
 	{
 		"en"	"You can't build sentries in this gamemode !"
 		"es"	"No puedes construir centinelas en este modo de juego!"
+		"ru"	"В этом игровом режиме нельзя строить турели!"
 	}
 	
 	"betray_team"
 	{
 		"en"	"You can't betray your team in this gamemode !"
 		"es"	"No puedes traicionar a tus compañeros!"
+		"ru"	"В этом режиме вы не можете предать свою команду!"
 	}
 	
 	"change_class"
 	{
 		"en"	"You can't change your class in this gamemode !"
 		"es"	"No puedes cambiar de clase en este modo de juego!"
+		"ru"	"Вы не можете изменить свой класс в этом игровом режиме!"
 	}
 	
 	"kill_me"
 	{
 		"en"	"You can't kill yourself in this gamemode !"
 		"es"	"No puedes suicidarte en este modo de juego!"
+		"ru"	"Вы не можете убить себя в этом игровом режиме!"
 	}
 	
 	"kill_me_explode"
 	{
 		"en"	"You can't kill yourself in this gamemode !"
 		"es"	"No puedes suicidarte en este modo de juego!"
+		"ru"	"Вы не можете убить себя в этом игровом режиме!"
 	}
 	
 	"change_spectator"
 	{
 		"en"	"You can't go to spectator in this gamemode !"
 		"es"	"No puedes ir al modo espectador en este modo de juego!"
+		"ru"	"В этом игровом режиме нельзя перейти к наблюдателям!"
 	}
 	
 	"only_medic"
 	{
 		"en"	"In zombie team, you can only be a medic !"
 		"es"	"En el equipo zombie, solo puedes ser Medic!"
+		"ru"	"В команде зомби вы можете быть только медиком!"
 	}
 	
 	"only_engineer"
 	{
 		"en"	"In survivor team, you can only be an engineer !"
 		"es"	"En el equipo supervivientes, solo puedes ser Engineer!"
+		"ru"	"В команде выживших вы можете быть только инженером!"
 	}
 	
 	"infected"
 	{
 		"en"	"You have been infected, you can't go back to survivor team !"
 		"es"	"Estas infectado, ya no podras volver al equipo de supervivientes!"
+		"ru"	"Вас заразили, вы не можете вернуться в команду выживших!"
 	}
 		
 	"version"
 	{
 		"en"	"This server runs Engineers vs Zombies V1.2.2"
 		"es"	"Este servidor esta usando Engineers vs Zombies V1.2.2"
+		"ru"	"Этот сервер имеет плагин Engineers vs Zombies V1.2.2"
 	}
 	
 	"red_goal"
 	{
 		"en"	"The goal for engineers (red team) is to survive as long as they can"
 		"es"	"El objetivo de los Engineers (equipo rojo) es sobrevivir todo lo posible"
+		"ru"	"Задача инженеров (красная команда) - выжить как можно дольше."
 	}
 	
 	"blue_goal"
 	{
 		"en"	"The goal for medics (blue team) is to kill all engineers to turn them into zombies (medics) !"
 		"es"	"El objetivo de los Medics (equpo azul) es matar a los Engineers y infectarlos para convertirlos en Zombies!"
+		"ru"	"Цель медиков (синяя команда) - убить всех инженеров, чтобы превратить их в зомби (медиков)!"
 	}
 	
 	"source_plugin"
 	{
 		"en"	"This plugin can be downloaded from www.sourcemod.net (sources included)"
 		"es"	"Este plugin puede ser descargado de from www.sourcemod.net (sources incluido)"
+		"ru"	"Этот плагин можно скачать с www.sourcemod.net (включая источник)"
 	}
 	
 	"power_up"
 	{
 		"en"	"Zombies have gained crits and higher jump height !"
 		"es"	"Los Zombies consiguieron criticos y aumento de salto!"
+		"ru"	"Зомби получили криты и увеличенную высоту прыжка!"
 	}
 	
 	"infection_start"
 	{
 		"en"	"Infection starts in..."
 		"es"	"La Infeccion comienza en..."
+		"ru"	"Заражение начинается..."
 	}
 	
 	"infection_unleashed"
 	{
 		"en"	"Zombie medics are now unleashed !"
 		"es"	"Los Zombie Medics estan en camino!"
+		"ru"	"Зомби-медики идут за вами!"
 	}
 }
